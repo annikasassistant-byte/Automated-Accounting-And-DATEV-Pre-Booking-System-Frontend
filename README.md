@@ -15,7 +15,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Ensure the API is running and `NEXT_PUBLIC_API_URL` points to it (default `http://localhost:5000`).
+Set `NEXT_PUBLIC_API_URL` to the API origin (see `.env.example`).
+
+- Local default: `http://localhost:5000`
+- Production Render: `https://automated-accounting-and-datev-pre-3lr4.onrender.com`
 
 ## Demo credentials (from server seed)
 
