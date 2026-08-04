@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { clearPasswordResetFlow, getResetToken } from "@/lib/password-reset-flow
 import { useResetPasswordMutation } from "@/services/authApi";
 import { getApiErrorMessage } from "@/services/auth-mappers";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { hardNavigate } from "@/lib/hard-navigate";
 
 const schema = z
   .object({
@@ -32,7 +33,6 @@ const schema = z
   });
 
 function ResetPasswordForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
   const [resetToken, setResetTokenState] = useState<string | null>(null);
@@ -49,12 +49,12 @@ function ResetPasswordForm() {
     const fromSession = getResetToken();
     const token = fromQuery || fromSession;
     if (!token) {
-      router.replace("/forgot-password");
+      hardNavigate("/forgot-password");
       return;
     }
     setResetTokenState(token);
     setReady(true);
-  }, [router, searchParams]);
+  }, [searchParams]);
 
   if (!ready || !resetToken) {
     return (
@@ -79,8 +79,7 @@ function ResetPasswordForm() {
               password: values.password,
             }).unwrap();
             clearPasswordResetFlow();
-            toast.success("Passwort aktualisiert");
-            router.push("/login");
+            hardNavigate("/login");
           } catch (error) {
             toast.error(getApiErrorMessage(error, "Passwort konnte nicht zurückgesetzt werden"));
           }

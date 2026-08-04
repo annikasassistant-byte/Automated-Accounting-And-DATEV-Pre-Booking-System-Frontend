@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { FileUp, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
@@ -209,11 +208,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
       {phase === "preview" && (
         <div className="space-y-6">
           {duplicateFile && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm"
-            >
+            <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
               <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
               <div>
                 <p className="font-medium">Mögliche Duplikat-Datei</p>
@@ -222,7 +217,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
                   Zeilen-Duplikate werden markiert.
                 </p>
               </div>
-            </motion.div>
+            </div>
           )}
 
           <div className="grid gap-4 sm:grid-cols-3">

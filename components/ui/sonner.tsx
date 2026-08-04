@@ -3,14 +3,11 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
-import {
-  CircleCheckIcon,
-  InfoIcon,
-  TriangleAlertIcon,
-  OctagonXIcon,
-  Loader2Icon,
-} from "lucide-react";
 
+/**
+ * Client-only Sonner host. Mounts once after hydration and keeps a stable
+ * portal tree so React 19 does not hit removeChild during route changes.
+ */
 const Toaster = ({ ...props }: ToasterProps) => {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -19,20 +16,17 @@ const Toaster = ({ ...props }: ToasterProps) => {
     setMounted(true);
   }, []);
 
-  // Avoid mounting Sonner portals until client is ready (prevents removeChild races).
   if (!mounted) return null;
 
   return (
     <Sonner
       theme={(resolvedTheme as ToasterProps["theme"]) || "system"}
       className="toaster group"
-      icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
-      }}
+      closeButton
+      richColors
+      position="top-right"
+      // Keep toasts outside React layout thrash during navigations.
+      offset={16}
       style={
         {
           "--normal-bg": "var(--popover)",

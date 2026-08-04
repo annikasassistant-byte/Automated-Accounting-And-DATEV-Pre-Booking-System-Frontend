@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -19,15 +18,9 @@ export function ChartCard({
   children,
   className,
   action,
-  delay = 0,
 }: ChartCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={cn("h-full", className)}
-    >
+    <div className={cn("h-full", className)}>
       <Card
         className="h-full overflow-hidden rounded-2xl border-border/40 bg-card/80 shadow-none backdrop-blur-sm"
         style={{ boxShadow: "var(--shadow-card)" }}
@@ -45,6 +38,6 @@ export function ChartCard({
           {children}
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   );
 }

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import { useState } from "react";
 import { ReduxProvider } from "@/store/redux-provider";
 import { RealtimeProvider } from "@/providers/realtime-provider";
 import { useAuthStore } from "@/lib/auth-store";
@@ -42,12 +41,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           enableSystem
           disableTransitionOnChange
         >
-          <TooltipProvider>
+          <TooltipProvider delay={200}>
             <PersistHydration>
-              <RealtimeProvider>
-                {children}
-                <Toaster richColors position="top-right" />
-              </RealtimeProvider>
+              <RealtimeProvider>{children}</RealtimeProvider>
+              {/* Outside RealtimeProvider so socket auth churn never remounts portals */}
+              <Toaster />
             </PersistHydration>
           </TooltipProvider>
         </ThemeProvider>

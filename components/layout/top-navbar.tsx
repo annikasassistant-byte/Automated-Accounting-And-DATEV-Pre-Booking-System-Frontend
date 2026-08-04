@@ -14,16 +14,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuthStore } from "@/lib/auth-store";
-import { useRouter } from "next/navigation";
 import { NotificationDropdown } from "@/components/layout/notification-dropdown";
 import { cn } from "@/lib/utils";
 import { getUserInitials } from "@/lib/user-display";
 import { useLogoutMutation } from "@/services/authApi";
+import { hardNavigate } from "@/lib/hard-navigate";
 
 export function TopNavbar({ profileHref }: { profileHref: string }) {
   const { user, logout } = useAuthStore();
   const { setTheme, resolvedTheme } = useTheme();
-  const router = useRouter();
   const [logoutRequest] = useLogoutMutation();
   const [mounted, setMounted] = useState(false);
 
@@ -41,7 +40,7 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
       // Still clear local session if API logout fails
     } finally {
       logout();
-      router.replace("/login");
+      hardNavigate("/login");
     }
   };
 
@@ -98,7 +97,7 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push(profileHref)} className="rounded-lg">
+            <DropdownMenuItem onClick={() => hardNavigate(profileHref)} className="rounded-lg">
               <User className="mr-2 h-4 w-4" />
               Profil
             </DropdownMenuItem>

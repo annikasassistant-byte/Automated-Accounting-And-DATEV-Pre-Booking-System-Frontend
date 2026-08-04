@@ -16,6 +16,7 @@ import { getRedirectForRole, useAuthStore } from "@/lib/auth-store";
 import { useLoginMutation } from "@/services/authApi";
 import { getApiErrorMessage } from "@/services/auth-mappers";
 import { toast } from "sonner";
+import { hardNavigate } from "@/lib/hard-navigate";
 
 const schema = z.object({
   email: z.string().email("Geben Sie eine gültige E-Mail-Adresse ein"),
@@ -94,12 +95,8 @@ export function LoginPage() {
             : "/dashboard";
 
       setNavigating(true);
-
-      // Full navigation avoids React removeChild races with portals/toasts
-      // during App Router client transitions after login.
-      window.setTimeout(() => {
-        window.location.assign(target);
-      }, 80);
+      // Immediate hard navigation — no soft router transition / portal race.
+      hardNavigate(target);
     } catch (error) {
       setNavigating(false);
       toast.error(getApiErrorMessage(error, "Ungültige E-Mail oder Passwort"));

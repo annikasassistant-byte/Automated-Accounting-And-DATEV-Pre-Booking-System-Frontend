@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,11 +13,11 @@ import { AuthFlowShell } from "@/components/auth/auth-flow-shell";
 import { setResetEmail } from "@/lib/password-reset-flow";
 import { useForgotPasswordMutation } from "@/services/authApi";
 import { getApiErrorMessage } from "@/services/auth-mappers";
+import { hardNavigate } from "@/lib/hard-navigate";
 
 const schema = z.object({ email: z.string().email("Geben Sie eine gültige E-Mail-Adresse ein") });
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
   const {
     register,
@@ -40,8 +39,7 @@ export default function ForgotPasswordPage() {
           try {
             await forgotPassword({ email: values.email.trim() }).unwrap();
             setResetEmail(values.email.trim());
-            toast.success("Falls diese E-Mail existiert, wurde ein Bestätigungscode gesendet");
-            router.push("/verify-otp");
+            hardNavigate("/verify-otp");
           } catch (error) {
             toast.error(getApiErrorMessage(error, "Reset-Code konnte nicht gesendet werden"));
           }

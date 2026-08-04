@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/auth-store";
 import type { UserRole } from "@/types";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { useLazyGetProfileQuery } from "@/services/authApi";
 import { mapServerUserToClient } from "@/services/auth-mappers";
+import { hardNavigate } from "@/lib/hard-navigate";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -14,12 +15,12 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user, hasRole, setUser, logout } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [fetchProfile] = useLazyGetProfileQuery();
+  const redirectingRef = useRef(false);
 
   // Wait for Zustand persist rehydration before reading auth state.
   useEffect(() => {
@@ -68,13 +69,16 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   }, [hydrated, fetchProfile, setUser, logout]);
 
   useEffect(() => {
-    if (!hydrated || !sessionChecked) return;
+    if (!hydrated || !sessionChecked || redirectingRef.current) return;
     if (!isAuthenticated || !user) {
-      router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+      redirectingRef.current = true;
+      // Hard navigation avoids App Router + portal removeChild races.
+      hardNavigate(`/login?redirect=${encodeURIComponent(pathname)}`);
       return;
     }
     if (allowedRoles && !allowedRoles.some((r) => hasRole(r))) {
-      router.replace("/unauthorized");
+      redirectingRef.current = true;
+      hardNavigate("/unauthorized");
     }
   }, [
     hydrated,
@@ -83,7 +87,6 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     user,
     allowedRoles,
     hasRole,
-    router,
     pathname,
   ]);
 

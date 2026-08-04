@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { FileQuestion, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,9 +20,7 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={cn(
         "flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-gradient-to-b from-muted/30 to-card/50 px-6 py-16 text-center",
         className
@@ -45,6 +42,6 @@ export function EmptyState({
           {actionLabel}
         </Button>
       )}
-    </motion.div>
+    </div>
   );
 }

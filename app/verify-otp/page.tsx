@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,6 +14,7 @@ import { AuthFlowShell } from "@/components/auth/auth-flow-shell";
 import { getResetEmail, setResetToken } from "@/lib/password-reset-flow";
 import { useForgotPasswordMutation, useVerifyOtpMutation } from "@/services/authApi";
 import { getApiErrorMessage } from "@/services/auth-mappers";
+import { hardNavigate } from "@/lib/hard-navigate";
 
 const schema = z.object({
   otp: z
@@ -24,7 +24,6 @@ const schema = z.object({
 });
 
 export default function VerifyOtpPage() {
-  const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [digits, setDigits] = useState(["", "", "", "", "", ""]);
@@ -43,11 +42,11 @@ export default function VerifyOtpPage() {
   useEffect(() => {
     const stored = getResetEmail();
     if (!stored) {
-      router.replace("/forgot-password");
+      hardNavigate("/forgot-password");
       return;
     }
     setEmail(stored);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const otp = digits.join("");
@@ -97,8 +96,7 @@ export default function VerifyOtpPage() {
           try {
             const data = await verifyOtp({ email, otp: values.otp }).unwrap();
             setResetToken(data.resetToken);
-            toast.success("Code bestätigt");
-            router.push("/reset-password");
+            hardNavigate("/reset-password");
           } catch (error) {
             toast.error(getApiErrorMessage(error, "Ungültiger oder abgelaufener Code"));
           }
