@@ -31,10 +31,15 @@ export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { data: profile, isLoading } = useGetProfileQuery();
   const [updatePrefs, { isLoading: saving }] = useUpdateNotificationPreferencesMutation();
+  const [mounted, setMounted] = useState(false);
   const [prefs, setPrefs] = useState<Record<PrefKey, boolean>>({
     emailAlerts: true,
     platformAnnouncements: true,
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const p = profile?.notificationPreferences as
@@ -63,16 +68,20 @@ export function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Design</Label>
-            <Select value={theme} onValueChange={(v) => v && setTheme(v)}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Design" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Hell</SelectItem>
-                <SelectItem value="dark">Dunkel</SelectItem>
-                <SelectItem value="system">System</SelectItem>
-              </SelectContent>
-            </Select>
+            {mounted ? (
+              <Select value={theme} onValueChange={(v) => v && setTheme(v)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Design" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Hell</SelectItem>
+                  <SelectItem value="dark">Dunkel</SelectItem>
+                  <SelectItem value="system">System</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="h-9 w-40 rounded-lg border border-border/50 bg-muted/30" />
+            )}
           </div>
         </CardContent>
       </Card>

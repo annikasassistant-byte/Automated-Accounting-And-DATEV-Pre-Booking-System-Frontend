@@ -1,9 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** CSS-only loader — avoids Framer Motion removeChild races during route changes. */
 export function BrandedLoader({ className }: { className?: string }) {
   return (
     <div
@@ -15,31 +15,17 @@ export function BrandedLoader({ className }: { className?: string }) {
       aria-label="Laden"
     >
       <div className="relative flex h-16 w-16 items-center justify-center">
-        <motion.div
-          className="absolute inset-0 rounded-full border-2 border-primary/20"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div
-          className="absolute inset-1 rounded-full border-2 border-transparent border-t-primary border-r-primary/40"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-        />
+        <div className="absolute inset-0 animate-spin rounded-full border-2 border-primary/20 [animation-duration:2.4s]" />
+        <div className="absolute inset-1 animate-spin rounded-full border-2 border-transparent border-t-primary border-r-primary/40 [animation-direction:reverse] [animation-duration:1.2s]" />
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
           <Layers className="h-4 w-4" />
         </div>
       </div>
       <div className="space-y-2 text-center">
         <p className="text-sm font-medium text-foreground">Automated Accounting</p>
-        <motion.div
-          className="mx-auto h-1 w-24 overflow-hidden rounded-full bg-muted"
-        >
-          <motion.div
-            className="h-full w-1/2 rounded-full bg-primary"
-            animate={{ x: ["-100%", "200%"] }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.div>
+        <div className="mx-auto h-1 w-24 overflow-hidden rounded-full bg-muted">
+          <div className="h-full w-1/2 animate-pulse rounded-full bg-primary" />
+        </div>
       </div>
     </div>
   );

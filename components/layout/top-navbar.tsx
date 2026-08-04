@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -24,9 +25,14 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
   const { setTheme, resolvedTheme } = useTheme();
   const router = useRouter();
   const [logoutRequest] = useLogoutMutation();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const initials = getUserInitials(user?.name);
-  const isDark = resolvedTheme === "dark";
+  const isDark = mounted && resolvedTheme === "dark";
 
   const handleLogout = async () => {
     try {
@@ -44,7 +50,7 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
       <div className="hidden min-w-0 sm:block">
         <p className="truncate text-sm text-muted-foreground">
           Willkommen zurück,{" "}
-          <span className="font-semibold text-foreground">{user?.name}</span>
+          <span className="font-semibold text-foreground">{user?.name ?? "…"}</span>
         </p>
       </div>
       <div className="ml-auto flex items-center gap-1">
@@ -55,12 +61,19 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
           className="relative h-9 w-9 rounded-xl"
           onClick={() => setTheme(isDark ? "light" : "dark")}
           aria-label={isDark ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
+          suppressHydrationWarning
         >
           <Sun
-            className={`h-4 w-4 transition-all ${isDark ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
+            className={cn(
+              "h-4 w-4 transition-all",
+              !mounted ? "opacity-0" : isDark ? "scale-0 opacity-0" : "scale-100 opacity-100"
+            )}
           />
           <Moon
-            className={`absolute h-4 w-4 transition-all ${isDark ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+            className={cn(
+              "absolute h-4 w-4 transition-all",
+              !mounted ? "opacity-0" : isDark ? "scale-100 opacity-100" : "scale-0 opacity-0"
+            )}
           />
         </Button>
         <DropdownMenu>

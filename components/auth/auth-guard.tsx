@@ -21,8 +21,28 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [fetchProfile] = useLazyGetProfileQuery();
 
+  // Wait for Zustand persist rehydration before reading auth state.
   useEffect(() => {
-    setHydrated(true);
+    let cancelled = false;
+
+    const finish = () => {
+      if (!cancelled) setHydrated(true);
+    };
+
+    if (useAuthStore.persist.hasHydrated()) {
+      finish();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const unsub = useAuthStore.persist.onFinishHydration(finish);
+    void useAuthStore.persist.rehydrate();
+
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, []);
 
   useEffect(() => {
@@ -36,7 +56,7 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
         setUser(mapServerUserToClient(profile));
       } catch {
         if (cancelled) return;
-        if (isAuthenticated) logout();
+        if (useAuthStore.getState().isAuthenticated) logout();
       } finally {
         if (!cancelled) setSessionChecked(true);
       }
@@ -45,7 +65,7 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, fetchProfile, setUser, logout, isAuthenticated]);
+  }, [hydrated, fetchProfile, setUser, logout]);
 
   useEffect(() => {
     if (!hydrated || !sessionChecked) return;

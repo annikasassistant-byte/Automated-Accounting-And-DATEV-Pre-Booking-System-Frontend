@@ -29,6 +29,13 @@ Set `NEXT_PUBLIC_API_URL` to the API origin (see `.env.example`).
 
 ## Routes
 
-- **User:** `/dashboard`, profile, settings
-- **Admin:** `/admin/dashboard`, `/admin/users`, settings, profile
 - **Auth:** `/login`, `/forgot-password`, `/verify-otp`, `/reset-password`, `/unauthorized`
+- **User & Admin accounting modules** (mirrored under `/dashboard/*` and `/admin/*`):
+  - Import: `/import/bank`, `/import/paypal`
+  - `/transactions`, `/patterns`, `/rules`, `/accounts`
+  - `/export`, `/duplicates`, `/reconciliation`, `/reports`
+  - `/settings/company`
+- **Admin only:** `/admin/users`
+- Profile & theme settings remain at `/profile` and `/settings`
+
+Accounting UI uses a client Zustand store (`aa-accounting`) with mock seed data until backend APIs are connected.

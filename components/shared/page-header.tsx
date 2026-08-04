@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
@@ -22,10 +21,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   if (hero) {
     return (
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      <section
         className={cn(
           "relative overflow-hidden rounded-2xl border border-border/40 p-6 sm:p-8 md:p-10",
           "glass-panel-strong",
@@ -50,15 +46,12 @@ export function PageHeader({
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>
-      </motion.section>
+      </section>
     );
   }
 
   return (
-    <motion.header
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+    <header
       className={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}
     >
       <div className="space-y-1.5">
@@ -73,6 +66,6 @@ export function PageHeader({
         )}
       </div>
       {action}
-    </motion.header>
+    </header>
   );
 }

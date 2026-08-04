@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { motion } from "framer-motion";
 import { ArrowRight, Layers, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,26 +45,19 @@ function Field({
       </Label>
       {children}
       {error && (
-        <motion.p
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-sm text-destructive"
-          role="alert"
-        >
+        <p className="text-sm text-destructive" role="alert">
           {error}
-        </motion.p>
+        </p>
       )}
     </div>
   );
 }
 
 export function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const [login, { isLoading }] = useLoginMutation();
   const [mounted, setMounted] = useState(false);
-  /** Keep overlay through navigation — avoids AnimatePresence exit vs router unmount race. */
   const [navigating, setNavigating] = useState(false);
 
   useEffect(() => {
@@ -91,6 +83,7 @@ export function LoginPage() {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       });
+
       const mapped = useAuthStore.getState().user;
       const redirect = searchParams.get("redirect");
       const target =
@@ -98,15 +91,15 @@ export function LoginPage() {
           ? redirect
           : mapped
             ? getRedirectForRole(mapped.role)
-            : null;
+            : "/dashboard";
 
       setNavigating(true);
-      toast.success("Willkommen zurück");
-      if (target) {
-        router.replace(target);
-      } else {
-        setNavigating(false);
-      }
+
+      // Full navigation avoids React removeChild races with portals/toasts
+      // during App Router client transitions after login.
+      window.setTimeout(() => {
+        window.location.assign(target);
+      }, 80);
     } catch (error) {
       setNavigating(false);
       toast.error(getApiErrorMessage(error, "Ungültige E-Mail oder Passwort"));
@@ -145,12 +138,7 @@ export function LoginPage() {
         </div>
       )}
 
-      <motion.section
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative hidden flex-1 flex-col justify-between border-r border-border/40 p-12 lg:flex xl:p-16"
-      >
+      <section className="relative hidden flex-1 flex-col justify-between border-r border-border/40 p-12 lg:flex xl:p-16">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/25">
             <Layers className="h-5 w-5" />
@@ -171,15 +159,10 @@ export function LoginPage() {
           </p>
         </div>
         <p className="text-sm text-muted-foreground">© 2026 Automated Accounting</p>
-      </motion.section>
+      </section>
 
       <div className="relative flex flex-1 items-center justify-center p-4 py-12 sm:p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.1 }}
-          className="grid w-full max-w-lg gap-6"
-        >
+        <div className="grid w-full max-w-lg gap-6">
           <div className="mb-2 flex items-center gap-2 lg:hidden">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Layers className="h-5 w-5" />
@@ -248,7 +231,7 @@ export function LoginPage() {
               </Button>
             </form>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -20,7 +20,6 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Layers } from "lucide-react";
-import { motion } from "framer-motion";
 
 function isNavActive(pathname: string, href: string) {
   return (
@@ -119,14 +118,9 @@ export function DashboardShell({
           <SidebarTrigger className="-ml-1 rounded-xl" />
           {topbar}
         </header>
-        <motion.main
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.35 }}
-          className="flex-1 px-4 py-6 lg:px-8 lg:py-10"
-        >
+        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-10">
           <div className="mx-auto max-w-[1400px] space-y-8">{children}</div>
-        </motion.main>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

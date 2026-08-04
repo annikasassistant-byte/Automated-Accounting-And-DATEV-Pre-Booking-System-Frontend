@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { User, UserRole } from "@/types";
 import { clearTokens, persistTokens } from "@/services/config";
 import { getRedirectForRole, mapServerUserToClient } from "@/services/auth-mappers";
@@ -43,7 +43,16 @@ export const useAuthStore = create<AuthState>()(
       },
       hasRole: (role) => get().user?.role === role,
     }),
-    { name: "aa-auth" }
+    {
+      name: "aa-auth",
+      storage: createJSONStorage(() => localStorage),
+      // Avoid SSR/client HTML mismatch — rehydrate manually after mount.
+      skipHydration: true,
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
   )
 );
 

@@ -22,27 +22,31 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const token = getStoredAccessToken();
-    const socket = io(API_BASE_URL, {
-      path: "/socket.io",
-      auth: token ? { token } : {},
-      transports: ["websocket", "polling"],
-      withCredentials: true,
-    });
-    socketRef.current = socket;
+    // Defer socket connect so it doesn't race login route unmount.
+    const timer = window.setTimeout(() => {
+      const token = getStoredAccessToken();
+      const socket = io(API_BASE_URL, {
+        path: "/socket.io",
+        auth: token ? { token } : {},
+        transports: ["websocket", "polling"],
+        withCredentials: true,
+      });
+      socketRef.current = socket;
 
-    socket.on("server:user_updated", () => {
-      dispatch(authApi.util.invalidateTags(["Profile"]));
-    });
-    socket.on("server:force_logout", () => {
-      useAuthStore.getState().logout();
-    });
-    socket.on("connect_error", () => {
-      // Silent — realtime is best-effort
-    });
+      socket.on("server:user_updated", () => {
+        dispatch(authApi.util.invalidateTags(["Profile"]));
+      });
+      socket.on("server:force_logout", () => {
+        useAuthStore.getState().logout();
+      });
+      socket.on("connect_error", () => {
+        // Silent — realtime is best-effort
+      });
+    }, 250);
 
     return () => {
-      socket.disconnect();
+      window.clearTimeout(timer);
+      socketRef.current?.disconnect();
       socketRef.current = null;
     };
   }, [isAuthenticated, dispatch]);

@@ -1,3 +1,5 @@
+export type * from "./accounting";
+
 export type UserRole = "admin" | "user";
 
 export interface User {
