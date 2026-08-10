@@ -9,7 +9,7 @@ import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrencyPrecise, formatDate } from "@/lib/format";
-import type { DuplicateItem } from "@/types/accounting";
+import type { DuplicateItem, DuplicateTxnPreview } from "@/types/accounting";
 import {
   useGetDuplicatesQuery,
   useResolveDuplicateMutation,
@@ -28,7 +28,7 @@ function DuplicateCard({
   onIgnore: () => void;
   onKeepBoth: () => void;
 }) {
-  const rows = item.transactions?.length
+  const rows: DuplicateTxnPreview[] = item.transactions?.length
     ? item.transactions
     : item.transactionIds.map((id) => ({ id }));
 

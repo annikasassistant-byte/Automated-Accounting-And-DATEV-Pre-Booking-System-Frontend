@@ -108,7 +108,7 @@ export function SystemPoliciesPage() {
       <PageHeader
         title="Systemrichtlinien"
         description="Admin-konfigurierbare Buchungsrichtlinien (S1–S15). Änderungen gelten für neue Imports und Regel-Anwendung."
-        actions={
+        action={
           isAdmin ? (
             <div className="flex gap-2">
               <Button variant="outline" onClick={reset} disabled={resetting}>
