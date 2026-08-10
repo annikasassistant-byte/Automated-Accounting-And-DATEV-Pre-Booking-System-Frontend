@@ -13,19 +13,28 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAccountingStore } from "@/store/accounting-store";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { formatCurrencyPrecise } from "@/lib/format";
 import { useAuthStore } from "@/lib/auth-store";
+import {
+  useGetTransactionsQuery,
+  useGetRulesQuery,
+  useGetExportsQuery,
+  useGetRuleSuggestionsQuery,
+} from "@/services/accountingApi";
 
 export default function UserDashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const transactions = useAccountingStore((s) => s.transactions);
-  const rules = useAccountingStore((s) => s.rules);
-  const exports = useAccountingStore((s) => s.exports);
-  const patterns = useAccountingStore((s) => s.patterns);
+  const { data: txData, isLoading: txLoading } = useGetTransactionsQuery({ limit: 500 });
+  const { data: rules = [], isLoading: rulesLoading } = useGetRulesQuery();
+  const { data: exports = [] } = useGetExportsQuery();
+  const { data: patterns = [] } = useGetRuleSuggestionsQuery();
 
+  if (txLoading || rulesLoading) return <LoadingSkeleton variant="page" />;
+
+  const transactions = txData?.items ?? [];
   const openCount = transactions.filter((t) =>
-    ["new", "suggested", "matched"].includes(t.status)
+    ["imported", "suggested", "matched", "open", "new"].includes(t.status)
   ).length;
   const exportedCount = transactions.filter((t) => t.exportStatus === "exported").length;
   const pendingPatterns = patterns.filter((p) => p.status === "pending").length;

@@ -4,48 +4,82 @@ import { useEffect, useState } from "react";
 import { Link2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAccountingStore } from "@/store/accounting-store";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useAuthStore } from "@/lib/auth-store";
 import type { CompanySettings, DatevSettings } from "@/types/accounting";
+import {
+  useGetCompanySettingsQuery,
+  useUpdateCompanySettingsMutation,
+  useGetDatevSettingsQuery,
+  useUpdateDatevSettingsMutation,
+} from "@/services/accountingApi";
 
 export function CompanySettingsPage() {
-  const company = useAccountingStore((s) => s.company);
-  const datev = useAccountingStore((s) => s.datev);
-  const setCompany = useAccountingStore((s) => s.setCompany);
-  const setDatev = useAccountingStore((s) => s.setDatev);
+  const { data: company, isLoading: companyLoading } = useGetCompanySettingsQuery();
+  const { data: datev, isLoading: datevLoading } = useGetDatevSettingsQuery();
+  const [updateCompany] = useUpdateCompanySettingsMutation();
+  const [updateDatev] = useUpdateDatevSettingsMutation();
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
 
-  const [companyForm, setCompanyForm] = useState<CompanySettings>(company);
-  const [datevForm, setDatevForm] = useState<DatevSettings>(datev);
+  const [companyForm, setCompanyForm] = useState<CompanySettings>({
+    companyName: "",
+    taxId: "",
+    street: "",
+    city: "",
+    postalCode: "",
+    country: "",
+  });
+  const [datevForm, setDatevForm] = useState<DatevSettings>({
+    consultantNumber: "",
+    clientNumber: "",
+    chartOfAccounts: "",
+    fiscalYearStart: "",
+    defaultExpenseAccount: "",
+    defaultOffsetAccount: "",
+    blockExportIfOpen: false,
+  });
 
   useEffect(() => {
-    setCompanyForm(company);
+    if (company) setCompanyForm(company);
   }, [company]);
 
   useEffect(() => {
-    setDatevForm(datev);
+    if (datev) setDatevForm(datev);
   }, [datev]);
 
-  const saveCompany = () => {
+  const saveCompany = async () => {
     if (!companyForm.companyName.trim()) {
       toast.error("Firmenname ist erforderlich");
       return;
     }
-    setCompany(companyForm);
-    toast.success("Firmeneinstellungen gespeichert");
+    try {
+      await updateCompany(companyForm).unwrap();
+      toast.success("Firmeneinstellungen gespeichert");
+    } catch {
+      toast.error("Fehler beim Speichern");
+    }
   };
 
-  const saveDatev = () => {
+  const saveDatev = async () => {
     if (!datevForm.consultantNumber.trim() || !datevForm.clientNumber.trim()) {
       toast.error("Berater- und Mandantennummer sind erforderlich");
       return;
     }
-    setDatev(datevForm);
-    toast.success("DATEV-Einstellungen gespeichert");
+    try {
+      await updateDatev(datevForm).unwrap();
+      toast.success("DATEV-Einstellungen gespeichert");
+    } catch {
+      toast.error("Fehler beim Speichern");
+    }
   };
+
+  if (companyLoading || datevLoading) return <LoadingSkeleton variant="page" />;
 
   return (
     <div className="space-y-8">
@@ -75,6 +109,7 @@ export function CompanySettingsPage() {
                   id="companyName"
                   value={companyForm.companyName}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, companyName: e.target.value }))}
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -83,6 +118,7 @@ export function CompanySettingsPage() {
                   id="taxId"
                   value={companyForm.taxId}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, taxId: e.target.value }))}
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -91,6 +127,7 @@ export function CompanySettingsPage() {
                   id="country"
                   value={companyForm.country}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, country: e.target.value }))}
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
@@ -99,6 +136,7 @@ export function CompanySettingsPage() {
                   id="street"
                   value={companyForm.street}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, street: e.target.value }))}
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -107,6 +145,7 @@ export function CompanySettingsPage() {
                   id="postalCode"
                   value={companyForm.postalCode}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, postalCode: e.target.value }))}
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -115,14 +154,17 @@ export function CompanySettingsPage() {
                   id="city"
                   value={companyForm.city}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, city: e.target.value }))}
+                  disabled={!isAdmin}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <Button onClick={saveCompany}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Firma speichern
-                </Button>
-              </div>
+              {isAdmin && (
+                <div className="sm:col-span-2">
+                  <Button onClick={saveCompany}>
+                    <Save className="mr-2 h-4 w-4" />
+                    Firma speichern
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -142,6 +184,7 @@ export function CompanySettingsPage() {
                   onChange={(e) =>
                     setDatevForm((f) => ({ ...f, consultantNumber: e.target.value }))
                   }
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -150,6 +193,7 @@ export function CompanySettingsPage() {
                   id="clientNumber"
                   value={datevForm.clientNumber}
                   onChange={(e) => setDatevForm((f) => ({ ...f, clientNumber: e.target.value }))}
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -161,6 +205,7 @@ export function CompanySettingsPage() {
                     setDatevForm((f) => ({ ...f, chartOfAccounts: e.target.value }))
                   }
                   placeholder="SKR03 / SKR04"
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -172,6 +217,7 @@ export function CompanySettingsPage() {
                   onChange={(e) =>
                     setDatevForm((f) => ({ ...f, fiscalYearStart: e.target.value }))
                   }
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -182,6 +228,7 @@ export function CompanySettingsPage() {
                   onChange={(e) =>
                     setDatevForm((f) => ({ ...f, defaultExpenseAccount: e.target.value }))
                   }
+                  disabled={!isAdmin}
                 />
               </div>
               <div className="space-y-1.5">
@@ -192,14 +239,28 @@ export function CompanySettingsPage() {
                   onChange={(e) =>
                     setDatevForm((f) => ({ ...f, defaultOffsetAccount: e.target.value }))
                   }
+                  disabled={!isAdmin}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <Button onClick={saveDatev}>
-                  <Save className="mr-2 h-4 w-4" />
-                  DATEV speichern
-                </Button>
-              </div>
+              {isAdmin && (
+                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                  <Checkbox
+                    checked={datevForm.blockExportIfOpen ?? false}
+                    onCheckedChange={(v) =>
+                      setDatevForm((f) => ({ ...f, blockExportIfOpen: !!v }))
+                    }
+                  />
+                  Export blockieren, wenn offene Posten vorhanden
+                </label>
+              )}
+              {isAdmin && (
+                <div className="sm:col-span-2">
+                  <Button onClick={saveDatev}>
+                    <Save className="mr-2 h-4 w-4" />
+                    DATEV speichern
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -213,7 +274,7 @@ export function CompanySettingsPage() {
                   Kontenplan
                 </CardTitle>
                 <CardDescription>
-                  Konten (z. B. 4400 Wareneinkauf, 4910 Versand) unter Stammdaten → Kontenplan
+                  Konten (z. B. 3220, 1361, 4910) unter Stammdaten → Kontenplan
                   pflegen. Der hier gewählte Kontenrahmen ({datevForm.chartOfAccounts || "—"}) sollte
                   zum DATEV-Mandanten passen.
                 </CardDescription>

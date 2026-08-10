@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Pencil, Plus, Trash2, Upload, Database } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { SearchInput } from "@/components/shared/search-input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -34,8 +35,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { downloadTextFile, parseCsvText } from "@/lib/accounting/csv";
-import { useAccountingStore } from "@/store/accounting-store";
+import { useAuthStore } from "@/lib/auth-store";
+import {
+  useGetAccountsQuery,
+  useCreateAccountMutation,
+  useUpdateAccountMutation,
+  useSeedAccountsMutation,
+  useImportAccountsCsvMutation,
+  useLazyExportAccountsCsvQuery,
+} from "@/services/accountingApi";
 import type { Account, AccountType } from "@/types/accounting";
 
 const TYPE_LABELS: Record<AccountType, string> = {
@@ -44,9 +52,19 @@ const TYPE_LABELS: Record<AccountType, string> = {
   revenue: "Erlöse",
   asset: "Aktiv",
   liability: "Passiv",
+  clearing: "Verrechnungskonto",
+  other: "Sonstige",
 };
 
-const EMPTY_FORM: Omit<Account, "id"> = {
+type AccountForm = {
+  number: string;
+  name: string;
+  type: AccountType;
+  description: string;
+  status: "active" | "inactive";
+};
+
+const EMPTY_FORM: AccountForm = {
   number: "",
   name: "",
   type: "expense",
@@ -55,18 +73,21 @@ const EMPTY_FORM: Omit<Account, "id"> = {
 };
 
 export function AccountsPage() {
-  const accounts = useAccountingStore((s) => s.accounts);
-  const upsertAccount = useAccountingStore((s) => s.upsertAccount);
-  const deleteAccount = useAccountingStore((s) => s.deleteAccount);
+  const { data: accounts = [], isLoading } = useGetAccountsQuery();
+  const [createAccount] = useCreateAccountMutation();
+  const [updateAccount] = useUpdateAccountMutation();
+  const [seedAccounts, { isLoading: seeding }] = useSeedAccountsMutation();
+  const [importAccountsCsv] = useImportAccountsCsvMutation();
+  const [triggerExport] = useLazyExportAccountsCsvQuery();
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
 
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState<AccountForm>(EMPTY_FORM);
   const [importOpen, setImportOpen] = useState(false);
-  const [importText, setImportText] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -100,66 +121,67 @@ export function AccountsPage() {
     setDialogOpen(true);
   };
 
-  const saveAccount = () => {
+  const saveAccount = async () => {
     if (!form.number.trim() || !form.name.trim()) {
       toast.error("Kontonummer und Name sind erforderlich");
       return;
     }
-    upsertAccount(editingId ? { ...form, id: editingId } : form);
-    toast.success(editingId ? "Konto aktualisiert" : "Konto angelegt");
-    setDialogOpen(false);
-  };
-
-  const handleDelete = (id: string) => {
-    deleteAccount(id);
-    toast.success("Konto gelöscht");
-  };
-
-  const exportCsv = () => {
-    const header = "number;name;type;description;status";
-    const lines = accounts.map(
-      (a) =>
-        `${a.number};${a.name};${a.type};"${a.description.replace(/"/g, '""')}";${a.status}`
-    );
-    downloadTextFile("kontenplan.csv", [header, ...lines].join("\n"));
-    toast.success("Kontenplan exportiert");
-  };
-
-  const runImport = () => {
-    const parsed = parseCsvText(importText);
-    if (!parsed.rows.length) {
-      toast.error("Keine gültigen Zeilen gefunden");
-      return;
+    try {
+      if (editingId) {
+        await updateAccount({
+          id: editingId,
+          body: {
+            number: form.number,
+            name: form.name,
+            type: form.type,
+            notes: form.description,
+            active: form.status === "active",
+          },
+        }).unwrap();
+        toast.success("Konto aktualisiert");
+      } else {
+        await createAccount({
+          number: form.number,
+          name: form.name,
+          type: form.type,
+          notes: form.description,
+          active: form.status === "active",
+        } as never).unwrap();
+        toast.success("Konto angelegt");
+      }
+      setDialogOpen(false);
+    } catch {
+      toast.error("Fehler beim Speichern");
     }
-    let count = 0;
-    for (const row of parsed.rows) {
-      const number = (row.number || row.Nummer || row.Kontonummer || "").trim();
-      const name = (row.name || row.Name || row.Bezeichnung || "").trim();
-      if (!number || !name) continue;
-      const typeRaw = (row.type || row.Typ || "expense").toLowerCase();
-      const type = (
-        ["expense", "offset", "revenue", "asset", "liability"].includes(typeRaw)
-          ? typeRaw
-          : "expense"
-      ) as AccountType;
-      const statusRaw = (row.status || row.Status || "active").toLowerCase();
-      const status = statusRaw === "inactive" ? "inactive" : "active";
-      const description = row.description || row.Beschreibung || "";
-      const existing = accounts.find((a) => a.number === number);
-      upsertAccount({
-        id: existing?.id,
-        number,
-        name,
-        type,
-        description,
-        status,
-      });
-      count += 1;
-    }
-    toast.success(`${count} Konten importiert / aktualisiert`);
-    setImportOpen(false);
-    setImportText("");
   };
+
+  const handleSeed = async () => {
+    try {
+      await seedAccounts().unwrap();
+      toast.success("Kontenplan mit Standardkonten initialisiert");
+    } catch {
+      toast.error("Seed fehlgeschlagen");
+    }
+  };
+
+  const handleExportCsv = () => {
+    triggerExport();
+    toast.success("CSV-Download gestartet");
+  };
+
+  const handleImportCsv = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      await importAccountsCsv(formData).unwrap();
+      toast.success("Konten importiert");
+      setImportOpen(false);
+    } catch {
+      toast.error("Import fehlgeschlagen");
+    }
+  };
+
+  if (isLoading) return <LoadingSkeleton variant="page" />;
 
   return (
     <div className="space-y-8">
@@ -169,18 +191,26 @@ export function AccountsPage() {
         description="Aufwands-, Gegen- und Erlöskonten für die DATEV-Vorbebuchung pflegen."
         action={
           <div className="flex flex-wrap gap-2">
+            {isAdmin && (
+              <Button variant="outline" onClick={handleSeed} disabled={seeding}>
+                <Database className="mr-2 h-4 w-4" />
+                Seed
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
               Import
             </Button>
-            <Button variant="outline" onClick={exportCsv}>
+            <Button variant="outline" onClick={handleExportCsv}>
               <Download className="mr-2 h-4 w-4" />
               CSV
             </Button>
-            <Button onClick={openCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Konto
-            </Button>
+            {isAdmin && (
+              <Button onClick={openCreate}>
+                <Plus className="mr-2 h-4 w-4" />
+                Konto
+              </Button>
+            )}
           </div>
         }
       />
@@ -221,8 +251,8 @@ export function AccountsPage() {
         <EmptyState
           title="Keine Konten gefunden"
           description="Passen Sie die Filter an oder legen Sie ein neues Konto an."
-          actionLabel="Konto anlegen"
-          onAction={openCreate}
+          actionLabel={isAdmin ? "Konto anlegen" : undefined}
+          onAction={isAdmin ? openCreate : undefined}
         />
       ) : (
         <Card className="border-border/40">
@@ -235,7 +265,9 @@ export function AccountsPage() {
                   <TableHead>Typ</TableHead>
                   <TableHead>Beschreibung</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  {isAdmin && (
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -243,25 +275,35 @@ export function AccountsPage() {
                   <TableRow key={account.id}>
                     <TableCell className="font-mono tabular-nums">{account.number}</TableCell>
                     <TableCell className="font-medium">{account.name}</TableCell>
-                    <TableCell>{TYPE_LABELS[account.type]}</TableCell>
+                    <TableCell>{TYPE_LABELS[account.type] ?? account.type}</TableCell>
                     <TableCell className="max-w-[240px] truncate text-muted-foreground">
                       {account.description || "—"}
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={account.status} />
                     </TableCell>
-                    <TableCell className="space-x-1 text-right">
-                      <Button variant="ghost" size="icon-sm" onClick={() => openEdit(account)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleDelete(account.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="space-x-1 text-right">
+                        <Button variant="ghost" size="icon-sm" onClick={() => openEdit(account)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => {
+                            updateAccount({
+                              id: account.id,
+                              body: { active: false },
+                            })
+                              .unwrap()
+                              .then(() => toast.success("Konto deaktiviert"))
+                              .catch(() => toast.error("Fehler"));
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -354,8 +396,7 @@ export function AccountsPage() {
           <DialogHeader>
             <DialogTitle>Konten importieren</DialogTitle>
             <DialogDescription>
-              CSV mit Spalten number;name;type;description;status einfügen oder Datei wählen.
-              Vorhandene Nummern werden aktualisiert.
+              CSV-Datei mit Konten hochladen. Der Server aktualisiert bestehende Nummern automatisch.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -364,10 +405,9 @@ export function AccountsPage() {
                 type="file"
                 accept=".csv,text/csv"
                 className="hidden"
-                onChange={async (e) => {
+                onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (!f) return;
-                  setImportText(await f.text());
+                  if (f) void handleImportCsv(f);
                 }}
               />
               <Button variant="outline" render={<span />} className="cursor-pointer">
@@ -375,19 +415,10 @@ export function AccountsPage() {
                 CSV-Datei wählen
               </Button>
             </label>
-            <textarea
-              className="min-h-[160px] w-full rounded-lg border border-input bg-background p-3 font-mono text-xs"
-              value={importText}
-              onChange={(e) => setImportText(e.target.value)}
-              placeholder={"number;name;type;description;status\n4400;Wareneingang;expense;Einkauf;active"}
-            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setImportOpen(false)}>
               Abbrechen
-            </Button>
-            <Button onClick={runImport} disabled={!importText.trim()}>
-              Upsert starten
             </Button>
           </DialogFooter>
         </DialogContent>

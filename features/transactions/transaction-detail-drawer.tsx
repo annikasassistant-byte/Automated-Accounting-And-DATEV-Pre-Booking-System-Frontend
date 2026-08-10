@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, Save, X } from "lucide-react";
+import { Check, Plus, Save, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -24,12 +23,18 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { formatCurrencyPrecise, formatDate, formatDateTime } from "@/lib/format";
+import { accountLabel } from "@/store/accounting-store";
+import { Badge } from "@/components/ui/badge";
 import {
-  accountLabel,
-  ruleLabel,
-  useAccountingStore,
-} from "@/store/accounting-store";
+  useGetTransactionQuery,
+  useGetAccountsQuery,
+  useAssignTransactionMutation,
+  useUpdateTransactionStatusMutation,
+} from "@/services/accountingApi";
+import { RuleWizardDialog } from "@/features/rules/rule-wizard-dialog";
+import { useAuthStore } from "@/lib/auth-store";
 
 interface TransactionDetailDrawerProps {
   transactionId: string | null;
@@ -42,67 +47,74 @@ export function TransactionDetailDrawer({
   open,
   onOpenChange,
 }: TransactionDetailDrawerProps) {
-  const transactions = useAccountingStore((s) => s.transactions);
-  const accounts = useAccountingStore((s) => s.accounts);
-  const rules = useAccountingStore((s) => s.rules);
-  const updateTransaction = useAccountingStore((s) => s.updateTransaction);
+  const { data: tx, isLoading } = useGetTransactionQuery(transactionId!, {
+    skip: !transactionId,
+  });
+  const { data: accounts = [] } = useGetAccountsQuery();
+  const [assignTransaction] = useAssignTransactionMutation();
+  const [updateStatus] = useUpdateTransactionStatusMutation();
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
 
-  const tx = useMemo(
-    () => transactions.find((t) => t.id === transactionId) ?? null,
-    [transactions, transactionId]
-  );
-
-  const [expenseAccountId, setExpenseAccountId] = useState("");
-  const [offsetAccountId, setOffsetAccountId] = useState("");
-  const [keywordsText, setKeywordsText] = useState("");
+  const [konto, setKonto] = useState("");
+  const [gegenkonto, setGegenkonto] = useState("");
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!tx) return;
-    setExpenseAccountId(tx.expenseAccountId ?? "");
-    setOffsetAccountId(tx.offsetAccountId ?? "");
-    setKeywordsText((tx.suggestedKeywords ?? []).join(", "));
+    setKonto(tx.booking?.konto ?? tx.expenseAccountId ?? "");
+    setGegenkonto(tx.booking?.gegenkonto ?? tx.offsetAccountId ?? "");
   }, [tx]);
 
   const expenseAccounts = accounts.filter(
-    (a) => a.type === "expense" && a.status === "active"
+    (a) =>
+      (a.type === "expense" || a.type === "revenue" || a.type === "other" || a.type === "asset") &&
+      a.status === "active"
   );
   const offsetAccounts = accounts.filter(
-    (a) => a.type === "offset" && a.status === "active"
+    (a) =>
+      (a.type === "asset" || a.type === "clearing" || a.type === "liability") &&
+      a.status === "active"
   );
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
     if (!tx) return;
-    updateTransaction(tx.id, {
-      status: "approved",
-      expenseAccountId: expenseAccountId || tx.expenseAccountId,
-      offsetAccountId: offsetAccountId || tx.offsetAccountId,
-      suggestedKeywords: keywordsText
-        .split(",")
-        .map((k) => k.trim())
-        .filter(Boolean),
-    });
-    toast.success("Transaktion freigegeben");
-    onOpenChange(false);
+    try {
+      if (konto || gegenkonto) {
+        await assignTransaction({
+          id: tx.id,
+          body: { konto: konto || undefined, gegenkonto: gegenkonto || undefined },
+        }).unwrap();
+      }
+      await updateStatus({ id: tx.id, body: { status: "reviewed" } }).unwrap();
+      toast.success("Transaktion freigegeben");
+      onOpenChange(false);
+    } catch {
+      toast.error("Fehler beim Freigeben");
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!tx) return;
-    updateTransaction(tx.id, { status: "rejected" });
-    toast.success("Transaktion abgelehnt");
-    onOpenChange(false);
+    try {
+      await updateStatus({ id: tx.id, body: { status: "skipped" } }).unwrap();
+      toast.success("Transaktion übersprungen");
+      onOpenChange(false);
+    } catch {
+      toast.error("Fehler beim Überspringen");
+    }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!tx) return;
-    updateTransaction(tx.id, {
-      expenseAccountId: expenseAccountId || null,
-      offsetAccountId: offsetAccountId || null,
-      suggestedKeywords: keywordsText
-        .split(",")
-        .map((k) => k.trim())
-        .filter(Boolean),
-    });
-    toast.success("Änderungen gespeichert");
+    try {
+      await assignTransaction({
+        id: tx.id,
+        body: { konto: konto || undefined, gegenkonto: gegenkonto || undefined },
+      }).unwrap();
+      toast.success("Änderungen gespeichert");
+    } catch {
+      toast.error("Fehler beim Speichern");
+    }
   };
 
   return (
@@ -120,7 +132,11 @@ export function TransactionDetailDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        {!tx ? (
+        {isLoading ? (
+          <div className="p-4">
+            <LoadingSkeleton variant="card" />
+          </div>
+        ) : !tx ? (
           <div className="p-4 text-sm text-muted-foreground">
             Bitte eine Transaktion auswählen.
           </div>
@@ -132,6 +148,9 @@ export function TransactionDetailDrawer({
                   <StatusBadge status={tx.status} />
                   <StatusBadge status={tx.source} />
                   <StatusBadge status={tx.exportStatus} />
+                  {(tx.systemMatched || tx.booking?.konto === "1361") && (
+                    <Badge variant="secondary">System: Verrechnung 1361</Badge>
+                  )}
                 </div>
                 <dl className="grid gap-3 text-sm sm:grid-cols-2">
                   <div>
@@ -166,34 +185,29 @@ export function TransactionDetailDrawer({
               <Separator />
 
               <section className="space-y-3">
-                <h3 className="text-sm font-semibold">Schlüsselwörter</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="tx-keywords">Vorgeschlagene Keywords</Label>
-                  <Input
-                    id="tx-keywords"
-                    value={keywordsText}
-                    onChange={(e) => setKeywordsText(e.target.value)}
-                    placeholder="z. B. DHL, Versand"
-                  />
-                </div>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="text-sm font-semibold">Regelzuordnung</h3>
-                <dl className="grid gap-3 text-sm">
-                  <div>
-                    <dt className="text-muted-foreground">Zugeordnete Regel</dt>
-                    <dd className="font-medium">
-                      {ruleLabel(rules, tx.matchedRuleId)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Vorgeschlagene Regel</dt>
-                    <dd className="font-medium">
-                      {ruleLabel(rules, tx.suggestedRuleId)}
-                    </dd>
-                  </div>
-                </dl>
+                <h3 className="text-sm font-semibold">Buchung</h3>
+                {tx.booking && (
+                  <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                    {tx.booking.bookingText && (
+                      <div className="sm:col-span-2">
+                        <dt className="text-muted-foreground">Buchungstext</dt>
+                        <dd className="font-medium">{tx.booking.bookingText}</dd>
+                      </div>
+                    )}
+                    {tx.booking.buKey && (
+                      <div>
+                        <dt className="text-muted-foreground">BU-Schlüssel</dt>
+                        <dd className="font-medium">{tx.booking.buKey}</dd>
+                      </div>
+                    )}
+                    {tx.booking.sollHaben && (
+                      <div>
+                        <dt className="text-muted-foreground">Soll/Haben</dt>
+                        <dd className="font-medium">{tx.booking.sollHaben}</dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
                 {typeof tx.confidence === "number" && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
@@ -214,19 +228,17 @@ export function TransactionDetailDrawer({
                 <div className="space-y-2">
                   <Label>Aufwandskonto</Label>
                   <Select
-                    value={expenseAccountId || undefined}
-                    onValueChange={(v) => setExpenseAccountId(v ?? "")}
+                    value={konto || undefined}
+                    onValueChange={(v) => setKonto(v ?? "")}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Konto wählen">
-                        {expenseAccountId
-                          ? accountLabel(accounts, expenseAccountId)
-                          : null}
+                        {konto ? accountLabel(accounts, konto) : null}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {expenseAccounts.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
+                        <SelectItem key={a.number} value={a.number}>
                           {a.number} · {a.name}
                         </SelectItem>
                       ))}
@@ -236,19 +248,17 @@ export function TransactionDetailDrawer({
                 <div className="space-y-2">
                   <Label>Gegenkonto</Label>
                   <Select
-                    value={offsetAccountId || undefined}
-                    onValueChange={(v) => setOffsetAccountId(v ?? "")}
+                    value={gegenkonto || undefined}
+                    onValueChange={(v) => setGegenkonto(v ?? "")}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Konto wählen">
-                        {offsetAccountId
-                          ? accountLabel(accounts, offsetAccountId)
-                          : null}
+                        {gegenkonto ? accountLabel(accounts, gegenkonto) : null}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {offsetAccounts.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
+                        <SelectItem key={a.number} value={a.number}>
                           {a.number} · {a.name}
                         </SelectItem>
                       ))}
@@ -288,19 +298,41 @@ export function TransactionDetailDrawer({
             </div>
 
             <SheetFooter className="border-t border-border/40 sm:flex-row">
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  onClick={() => setRuleDialogOpen(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Regel daraus erstellen
+                </Button>
+              )}
               <Button variant="outline" onClick={handleSave}>
                 <Save className="mr-2 h-4 w-4" />
                 Speichern
               </Button>
               <Button variant="destructive" onClick={handleReject}>
                 <X className="mr-2 h-4 w-4" />
-                Ablehnen
+                Überspringen
               </Button>
               <Button onClick={handleApprove}>
                 <Check className="mr-2 h-4 w-4" />
                 Freigeben
               </Button>
             </SheetFooter>
+
+            {tx && (
+              <RuleWizardDialog
+                open={ruleDialogOpen}
+                onOpenChange={setRuleDialogOpen}
+                initial={{
+                  name: tx.counterparty || "",
+                  keywords: [tx.counterparty, tx.description].filter(Boolean) as string[],
+                  expenseAccountId: tx.booking?.konto ?? tx.expenseAccountId ?? "",
+                  offsetAccountId: tx.booking?.gegenkonto ?? tx.offsetAccountId ?? "",
+                }}
+              />
+            )}
           </>
         )}
       </SheetContent>

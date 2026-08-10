@@ -1,14 +1,18 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { authApi } from "@/services/authApi";
+import { accountingApi } from "@/services/accountingApi";
 
 export const makeStore = () =>
   configureStore({
     reducer: {
       [authApi.reducerPath]: authApi.reducer,
+      [accountingApi.reducerPath]: accountingApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(authApi.middleware),
+      getDefaultMiddleware()
+        .concat(authApi.middleware)
+        .concat(accountingApi.middleware),
   });
 
 export type AppStore = ReturnType<typeof makeStore>;

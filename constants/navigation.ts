@@ -15,6 +15,9 @@ import {
   GitCompare,
   BarChart3,
   Building2,
+  ListTodo,
+  AlertTriangle,
+  Shield,
 } from "lucide-react";
 
 export interface NavItem {
@@ -32,6 +35,8 @@ const accountingItems = (prefix: "/admin" | "/dashboard"): NavItem[] => [
   { title: "Bank-Import", href: `${prefix}/import/bank`, icon: Landmark },
   { title: "PayPal-Import", href: `${prefix}/import/paypal`, icon: Wallet },
   { title: "Transaktionen", href: `${prefix}/transactions`, icon: ArrowLeftRight },
+  { title: "Offene Posten", href: `${prefix}/transactions?status=open`, icon: ListTodo },
+  { title: "Konflikte", href: `${prefix}/transactions?status=conflict`, icon: AlertTriangle },
   { title: "Mustererkennung", href: `${prefix}/patterns`, icon: Sparkles },
   { title: "Regelwerk", href: `${prefix}/rules`, icon: Scale },
   { title: "Kontenplan", href: `${prefix}/accounts`, icon: BookOpen },
@@ -57,6 +62,7 @@ export const adminNavGroups: NavGroup[] = [
     label: "System",
     items: [
       { title: "Unternehmen", href: "/admin/settings/company", icon: Building2 },
+      { title: "Systemrichtlinien", href: "/admin/settings/system-policies", icon: Shield },
       { title: "Einstellungen", href: "/admin/settings", icon: Settings },
       { title: "Profil", href: "/admin/profile", icon: User },
     ],

@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SearchInput } from "@/components/shared/search-input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -27,7 +28,16 @@ import {
 } from "@/components/ui/dialog";
 import { formatDate } from "@/lib/format";
 import type { AccountingRule, MatchMode } from "@/types/accounting";
-import { accountLabel, useAccountingStore } from "@/store/accounting-store";
+import { accountLabel } from "@/store/accounting-store";
+import { useAuthStore } from "@/lib/auth-store";
+import {
+  useGetRulesQuery,
+  useGetAccountsQuery,
+  useDeleteRuleMutation,
+  useEnableRuleMutation,
+  useDisableRuleMutation,
+  useApplyRulesMutation,
+} from "@/services/accountingApi";
 import { RuleWizardDialog } from "@/features/rules/rule-wizard-dialog";
 
 const MATCH_MODE_LABELS: Record<MatchMode, string> = {
@@ -39,13 +49,13 @@ const MATCH_MODE_LABELS: Record<MatchMode, string> = {
 };
 
 export function RulesPage() {
-  const rules = useAccountingStore((s) => s.rules);
-  const accounts = useAccountingStore((s) => s.accounts);
-  const setRuleEnabled = useAccountingStore((s) => s.setRuleEnabled);
-  const deleteRule = useAccountingStore((s) => s.deleteRule);
-  const applyRulesToTransactions = useAccountingStore(
-    (s) => s.applyRulesToTransactions
-  );
+  const { data: rules = [], isLoading } = useGetRulesQuery();
+  const { data: accounts = [] } = useGetAccountsQuery();
+  const [deleteRuleMut] = useDeleteRuleMutation();
+  const [enableRule] = useEnableRuleMutation();
+  const [disableRule] = useDisableRuleMutation();
+  const [applyRules] = useApplyRulesMutation();
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
 
   const [search, setSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -70,9 +80,13 @@ export function RulesPage() {
     });
   }, [rules, accounts, search]);
 
-  const handleApply = () => {
-    const count = applyRulesToTransactions();
-    toast.success(`${count} Transaktion(en) mit Regeln aktualisiert`);
+  const handleApply = async () => {
+    try {
+      const result = await applyRules().unwrap();
+      toast.success(`${result.applied ?? 0} Transaktion(en) mit Regeln aktualisiert`);
+    } catch {
+      toast.error("Fehler beim Anwenden der Regeln");
+    }
   };
 
   const openCreate = () => {
@@ -85,12 +99,31 @@ export function RulesPage() {
     setWizardOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteId) return;
-    deleteRule(deleteId);
-    toast.success("Regel gelöscht");
+    try {
+      await deleteRuleMut(deleteId).unwrap();
+      toast.success("Regel gelöscht");
+    } catch {
+      toast.error("Fehler beim Löschen");
+    }
     setDeleteId(null);
   };
+
+  const handleToggle = async (id: string, enabled: boolean) => {
+    try {
+      if (enabled) {
+        await enableRule(id).unwrap();
+      } else {
+        await disableRule(id).unwrap();
+      }
+      toast.success(enabled ? "Regel aktiviert" : "Regel deaktiviert");
+    } catch {
+      toast.error("Fehler beim Umschalten");
+    }
+  };
+
+  if (isLoading) return <LoadingSkeleton variant="page" />;
 
   return (
     <div className="space-y-8">
@@ -104,10 +137,12 @@ export function RulesPage() {
               <Play className="mr-2 h-4 w-4" />
               Regel anwenden
             </Button>
-            <Button onClick={openCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Neue Regel
-            </Button>
+            {isAdmin && (
+              <Button onClick={openCreate}>
+                <Plus className="mr-2 h-4 w-4" />
+                Neue Regel
+              </Button>
+            )}
           </div>
         }
       />
@@ -123,8 +158,8 @@ export function RulesPage() {
         <EmptyState
           title="Keine Regeln"
           description="Erstellen Sie eine Regel oder passen Sie die Suche an."
-          actionLabel="Regel erstellen"
-          onAction={openCreate}
+          actionLabel={isAdmin ? "Regel erstellen" : undefined}
+          onAction={isAdmin ? openCreate : undefined}
         />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/60">
@@ -142,7 +177,9 @@ export function RulesPage() {
                   <TableHead>Version</TableHead>
                   <TableHead>Treffer</TableHead>
                   <TableHead>Aktualisiert</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  {isAdmin && (
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -151,14 +188,8 @@ export function RulesPage() {
                     <TableCell>
                       <Switch
                         checked={rule.enabled}
-                        onCheckedChange={(v) => {
-                          setRuleEnabled(rule.id, v);
-                          toast.success(
-                            v
-                              ? `„${rule.name}“ aktiviert`
-                              : `„${rule.name}“ deaktiviert`
-                          );
-                        }}
+                        onCheckedChange={(v) => handleToggle(rule.id, v)}
+                        disabled={!isAdmin}
                       />
                     </TableCell>
                     <TableCell className="font-medium">{rule.name}</TableCell>
@@ -189,24 +220,26 @@ export function RulesPage() {
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(rule.updatedAt)}
                     </TableCell>
-                    <TableCell className="space-x-2 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEdit(rule)}
-                      >
-                        <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                        Bearbeiten
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setDeleteId(rule.id)}
-                      >
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                        Löschen
-                      </Button>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="space-x-2 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEdit(rule)}
+                        >
+                          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                          Bearbeiten
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setDeleteId(rule.id)}
+                        >
+                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                          Löschen
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

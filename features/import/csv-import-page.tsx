@@ -1,99 +1,100 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { FileUp, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, FileUp, Upload, CheckCircle2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { formatCurrencyPrecise, formatDateTime } from "@/lib/format";
 import type { TransactionSource } from "@/types/accounting";
-import { hashFile, parseCsvText } from "@/lib/accounting/csv";
 import {
-  createTransactionsFromRows,
-  useAccountingStore,
-} from "@/store/accounting-store";
+  useImportBankMutation,
+  useImportPaypalMutation,
+  useGetImportsQuery,
+  useReprocessImportMutation,
+} from "@/services/accountingApi";
 
-type Phase = "idle" | "parsing" | "preview" | "importing" | "done" | "error";
+type Phase = "idle" | "uploading" | "done" | "error";
 
 export function CsvImportPage({ source }: { source: TransactionSource }) {
-  const importedFileHashes = useAccountingStore((s) => s.importedFileHashes);
-  const addImportBatch = useAccountingStore((s) => s.addImportBatch);
-  const applyRulesToTransactions = useAccountingStore((s) => s.applyRulesToTransactions);
+  const [importBank, { isLoading: bankLoading }] = useImportBankMutation();
+  const [importPaypal, { isLoading: paypalLoading }] = useImportPaypalMutation();
+  const [reprocess, { isLoading: reprocessing }] = useReprocessImportMutation();
+  const {
+    data: history = [],
+    isLoading: historyLoading,
+    isError: historyError,
+    refetch: refetchHistory,
+  } = useGetImportsQuery({ source, limit: 50 });
+
+  const isUploading = bankLoading || paypalLoading;
 
   const [phase, setPhase] = useState<Phase>("idle");
-  const [progress, setProgress] = useState(0);
   const [file, setFile] = useState<File | null>(null);
-  const [fileHash, setFileHash] = useState("");
-  const [headers, setHeaders] = useState<string[]>([]);
-  const [rows, setRows] = useState<Array<Record<string, string>>>([]);
-  const [errors, setErrors] = useState<Array<{ row: number; message: string }>>([]);
-  const [duplicateFile, setDuplicateFile] = useState(false);
-  const [importedCount, setImportedCount] = useState(0);
+  const [result, setResult] = useState<{
+    rowCount: number;
+    successCount: number;
+    errorCount: number;
+    status?: string;
+    balanceCheck?: {
+      expectedGuthaben: number;
+      calculatedGuthaben: number;
+      matched: boolean;
+      note?: string;
+    } | null;
+    message?: string;
+  } | null>(null);
 
   const title = source === "bank" ? "Bank-CSV Import" : "PayPal-CSV Import";
   const eyebrow = source === "bank" ? "Bank" : "PayPal";
 
-  const previewRows = useMemo(() => rows.slice(0, 20), [rows]);
-
   const reset = () => {
     setPhase("idle");
-    setProgress(0);
     setFile(null);
-    setFileHash("");
-    setHeaders([]);
-    setRows([]);
-    setErrors([]);
-    setDuplicateFile(false);
-    setImportedCount(0);
+    setResult(null);
   };
 
-  const processFile = useCallback(
-    async (f: File) => {
-      if (!f.name.toLowerCase().endsWith(".csv")) {
-        toast.error("Nur CSV-Dateien werden unterstützt");
-        setPhase("error");
-        return;
+  const processFile = async (f: File) => {
+    if (!f.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Nur CSV-Dateien werden unterstützt");
+      return;
+    }
+    setFile(f);
+    setPhase("uploading");
+
+    const formData = new FormData();
+    formData.append("file", f);
+
+    try {
+      const mutation = source === "bank" ? importBank : importPaypal;
+      const batch = await mutation(formData).unwrap();
+      setResult({
+        rowCount: batch.rowCount,
+        successCount: batch.successCount,
+        errorCount: batch.errorCount,
+        status: batch.status,
+        balanceCheck: batch.balanceCheck,
+        message: batch.message,
+      });
+      setPhase("done");
+      void refetchHistory();
+      if (batch.status === "duplicate_file") {
+        toast.warning(batch.message ?? "Datei wurde bereits importiert (Duplikat).");
+      } else {
+        toast.success(`${batch.successCount || batch.rowCount} Zeilen verarbeitet`);
       }
-      setFile(f);
-      setPhase("parsing");
-      setProgress(15);
-      try {
-        const hash = await hashFile(f);
-        setFileHash(hash);
-        setDuplicateFile(importedFileHashes.includes(hash));
-        setProgress(40);
-        const text = await f.text();
-        setProgress(70);
-        const parsed = parseCsvText(text);
-        setHeaders(parsed.headers);
-        setRows(parsed.rows);
-        setErrors(parsed.errors);
-        setProgress(100);
-        if (!parsed.rows.length) {
-          setPhase("error");
-          toast.error("Keine gültigen Zeilen gefunden");
-          return;
-        }
-        setPhase("preview");
-        toast.success(`${parsed.rows.length} Zeilen gelesen`);
-      } catch {
-        setPhase("error");
-        toast.error("Datei konnte nicht gelesen werden");
-      }
-    },
-    [importedFileHashes]
-  );
+    } catch (err) {
+      setPhase("error");
+      const msg =
+        (err as { data?: { message?: string } })?.data?.message ?? "Import fehlgeschlagen";
+      toast.error(msg);
+    }
+  };
 
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
@@ -101,38 +102,18 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
     if (f) await processFile(f);
   };
 
-  const runImport = async () => {
-    if (!file) return;
-    setPhase("importing");
-    setProgress(10);
-    const batchId = `batch-${Date.now()}`;
-    await new Promise((r) => setTimeout(r, 350));
-    setProgress(45);
-    const txs = createTransactionsFromRows(source, rows, batchId);
-    setProgress(75);
-    const wasDuplicateFile = duplicateFile || importedFileHashes.includes(fileHash || file.name);
-    const { duplicateFile: dup } = addImportBatch(
-      {
-        id: batchId,
-        source,
-        fileName: file.name,
-        fileHash: fileHash || file.name,
-        importedAt: new Date().toISOString(),
-        rowCount: rows.length,
-        successCount: txs.length,
-        errorCount: errors.length,
-        duplicateCount: wasDuplicateFile ? 1 : 0,
-        status: errors.length && !txs.length ? "failed" : "completed",
-        errors,
-      },
-      txs
-    );
-    const applied = applyRulesToTransactions();
-    setProgress(100);
-    setImportedCount(txs.length);
-    setDuplicateFile(dup || wasDuplicateFile);
-    setPhase("done");
-    toast.success(`${txs.length} Transaktionen importiert · ${applied} Regeln angewendet`);
+  const handleReprocess = async (id: string) => {
+    try {
+      const res = await reprocess(id).unwrap();
+      toast.success(
+        `Neu verarbeitet: ${res.matchedCount} matched, ${res.openCount} offen, ${res.conflictCount} Konflikte`,
+      );
+      void refetchHistory();
+    } catch (err) {
+      toast.error(
+        (err as { data?: { message?: string } })?.data?.message ?? "Neuverarbeitung fehlgeschlagen",
+      );
+    }
   };
 
   return (
@@ -140,7 +121,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
       <PageHeader
         title={title}
         eyebrow={eyebrow}
-        description="CSV hochladen, validieren und Transaktionen für die Regelengine vorbereiten."
+        description="CSV hochladen — der Server validiert, importiert und wendet Regeln an."
         action={
           phase !== "idle" ? (
             <Button variant="outline" onClick={reset}>
@@ -163,7 +144,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
             <div className="space-y-1">
               <p className="text-lg font-semibold">CSV hierher ziehen</p>
               <p className="text-sm text-muted-foreground">
-                oder Datei auswählen · große Dateien werden clientseitig verarbeitet
+                oder Datei auswählen · Upload wird serverseitig verarbeitet
               </p>
             </div>
             <label>
@@ -184,130 +165,178 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
             {phase === "error" && (
               <EmptyState
                 title="Import fehlgeschlagen"
-                description="Prüfen Sie das CSV-Format (Delimiter ; oder ,) und Pflichtfelder Datum/Betrag."
+                description="Prüfen Sie das CSV-Format und versuchen Sie es erneut."
               />
             )}
           </CardContent>
         </Card>
       )}
 
-      {(phase === "parsing" || phase === "importing") && (
+      {phase === "uploading" && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              {phase === "parsing" ? "Datei wird gelesen…" : "Import läuft…"}
-            </CardTitle>
+            <CardTitle className="text-base">Upload läuft…</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Progress value={progress} />
+            <Progress value={isUploading ? 50 : 100} />
             <p className="text-sm text-muted-foreground">{file?.name}</p>
           </CardContent>
         </Card>
       )}
 
-      {phase === "preview" && (
-        <div className="space-y-6">
-          {duplicateFile && (
-            <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">
-              <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
-              <div>
-                <p className="font-medium">Mögliche Duplikat-Datei</p>
-                <p className="text-muted-foreground">
-                  Diese Datei wurde bereits importiert (gleicher Hash). Sie können fortfahren —
-                  Zeilen-Duplikate werden markiert.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Zeilen</CardTitle>
-              </CardHeader>
-              <CardContent className="text-2xl font-semibold tabular-nums">{rows.length}</CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Validierungsfehler</CardTitle>
-              </CardHeader>
-              <CardContent className="text-2xl font-semibold tabular-nums">{errors.length}</CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Quelle</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <StatusBadge status={source} />
-              </CardContent>
-            </Card>
-          </div>
-
-          {errors.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Validierungsfehler</CardTitle>
-              </CardHeader>
-              <CardContent className="max-h-40 space-y-1 overflow-auto text-sm">
-                {errors.slice(0, 30).map((e, i) => (
-                  <p key={`${e.row}-${i}`} className="text-destructive">
-                    Zeile {e.row}: {e.message}
-                  </p>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Vorschau (erste 20 Zeilen)</CardTitle>
-              <Button onClick={runImport} disabled={!rows.length}>
-                Import starten
-              </Button>
-            </CardHeader>
-            <CardContent className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {headers.slice(0, 8).map((h) => (
-                      <TableHead key={h}>{h}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {previewRows.map((row, idx) => (
-                    <TableRow key={idx}>
-                      {headers.slice(0, 8).map((h) => (
-                        <TableCell key={h} className="max-w-[180px] truncate text-sm">
-                          {row[h]}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {phase === "done" && (
+      {phase === "done" && result && (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
-            <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+            {result.status === "duplicate_file" ? (
+              <AlertTriangle className="h-12 w-12 text-amber-500" />
+            ) : (
+              <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+            )}
             <div className="space-y-1">
-              <p className="text-xl font-semibold">Import erfolgreich</p>
+              <p className="text-xl font-semibold">
+                {result.status === "duplicate_file" ? "Duplikat erkannt" : "Import erfolgreich"}
+              </p>
               <p className="text-sm text-muted-foreground">
-                {importedCount} Transaktionen aus {file?.name} übernommen.
-                {duplicateFile ? " Datei-Hash war bereits bekannt." : ""}
+                {result.status === "duplicate_file"
+                  ? (result.message ?? "Diese Datei wurde bereits importiert.")
+                  : (
+                      <>
+                        {result.successCount} Transaktionen aus {file?.name} übernommen.
+                        {result.errorCount > 0 && ` ${result.errorCount} Fehler.`}
+                      </>
+                    )}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={reset}>Weiteren Import</Button>
-            </div>
+            {result.status !== "duplicate_file" && (
+              <div className="flex items-center gap-3">
+                <StatusBadge status={source} />
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {result.rowCount} Zeilen verarbeitet
+                </span>
+              </div>
+            )}
+            {result.balanceCheck && (
+              <div
+                className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                  result.balanceCheck.matched
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
+                    : "border-amber-500/30 bg-amber-500/10 text-amber-700"
+                }`}
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="font-medium">
+                    Saldoabgleich: {result.balanceCheck.matched ? "Stimmt überein" : "Abweichung"}
+                  </p>
+                  <p>
+                    Erwartet: {result.balanceCheck.expectedGuthaben.toFixed(2)} € · Berechnet:{" "}
+                    {result.balanceCheck.calculatedGuthaben.toFixed(2)} €
+                  </p>
+                  {result.balanceCheck.note && <p>{result.balanceCheck.note}</p>}
+                </div>
+              </div>
+            )}
+            <Button onClick={reset}>Weiteren Import</Button>
           </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">Import-Historie</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Letzte {source === "bank" ? "Bank" : "PayPal"}-Imports aus MongoDB
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => void refetchHistory()}>
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Aktualisieren
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {historyLoading ? (
+            <LoadingSkeleton />
+          ) : historyError ? (
+            <EmptyState
+              title="Historie nicht ladbar"
+              description="API /imports konnte nicht gelesen werden."
+            />
+          ) : history.length === 0 ? (
+            <EmptyState
+              title="Noch keine Imports"
+              description="Laden Sie eine CSV-Datei hoch, um die Historie zu füllen."
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Datei</th>
+                    <th className="px-3 py-2 font-medium">Status</th>
+                    <th className="px-3 py-2 font-medium">Zeilen</th>
+                    <th className="px-3 py-2 font-medium">Matched / Offen / Konflikt</th>
+                    <th className="px-3 py-2 font-medium">Guthaben</th>
+                    <th className="px-3 py-2 font-medium">Datum</th>
+                    <th className="px-3 py-2 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((batch) => (
+                    <tr key={batch.id} className="border-t">
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{batch.fileName || "—"}</div>
+                        <div className="font-mono text-[11px] text-muted-foreground">
+                          {batch.fileHash?.slice(0, 12)}…
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <StatusBadge status={batch.status} />
+                      </td>
+                      <td className="px-3 py-2 tabular-nums">{batch.rowCount}</td>
+                      <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                        {batch.matchedCount ?? 0} / {batch.openCount ?? 0} /{" "}
+                        {batch.conflictCount ?? 0}
+                      </td>
+                      <td className="px-3 py-2">
+                        {batch.balanceCheck ? (
+                          <span
+                            className={
+                              batch.balanceCheck.matched
+                                ? "text-emerald-700 dark:text-emerald-400"
+                                : "text-amber-700 dark:text-amber-400"
+                            }
+                          >
+                            {batch.balanceCheck.matched ? "OK" : "Diff"}{" "}
+                            {formatCurrencyPrecise(batch.balanceCheck.expectedGuthaben ?? 0)}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {batch.importedAt ? formatDateTime(batch.importedAt) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {batch.status === "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={reprocessing}
+                            onClick={() => void handleReprocess(batch.id)}
+                          >
+                            Neu anwenden
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -9,25 +9,28 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth-store";
 import { useGetUsersQuery } from "@/services/authApi";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
-import { useAccountingStore } from "@/store/accounting-store";
 import { formatCurrencyPrecise } from "@/lib/format";
+import {
+  useGetTransactionsQuery,
+  useGetRulesQuery,
+} from "@/services/accountingApi";
 
 export default function AdminDashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const { data, isLoading } = useGetUsersQuery({ limit: 100 });
-  const transactions = useAccountingStore((s) => s.transactions);
-  const rules = useAccountingStore((s) => s.rules);
+  const { data: usersData, isLoading: usersLoading } = useGetUsersQuery({ limit: 100 });
+  const { data: txData, isLoading: txLoading } = useGetTransactionsQuery({ limit: 1 });
+  const { data: rules = [], isLoading: rulesLoading } = useGetRulesQuery();
 
-  if (isLoading) return <LoadingSkeleton variant="page" />;
+  if (usersLoading || txLoading || rulesLoading) return <LoadingSkeleton variant="page" />;
 
-  const list = data?.data ?? [];
+  const list = usersData?.data ?? [];
   const adminCount = list.filter((u) => {
     const role = typeof u.role === "string" ? u.role : u.role?.slug;
     return role === "admin";
   }).length;
   const userCount = list.length - adminCount;
-  const openTx = transactions.filter((t) => !["exported", "rejected"].includes(t.status)).length;
-  const volume = transactions.reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalTx = txData?.meta?.total ?? txData?.items.length ?? 0;
+  const volume = txData?.items.reduce((s, t) => s + Math.abs(t.amount), 0) ?? 0;
 
   return (
     <div className="space-y-10">
@@ -42,7 +45,7 @@ export default function AdminDashboardPage() {
         <MetricCard title="Benutzer gesamt" value={String(list.length)} icon={Users} />
         <MetricCard title="Administratoren" value={String(adminCount)} icon={Shield} />
         <MetricCard title="Standardbenutzer" value={String(userCount)} icon={UserCheck} />
-        <MetricCard title="Offene Transaktionen" value={String(openTx)} icon={ArrowLeftRight} />
+        <MetricCard title="Transaktionen" value={String(totalTx)} icon={ArrowLeftRight} />
         <MetricCard title="Aktive Regeln" value={String(rules.filter((r) => r.enabled).length)} icon={Scale} />
         <MetricCard title="Importvolumen" value={formatCurrencyPrecise(volume)} icon={FileOutput} />
       </div>

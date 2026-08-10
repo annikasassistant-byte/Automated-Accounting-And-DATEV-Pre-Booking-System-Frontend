@@ -159,6 +159,22 @@ export const authApi = createApi({
       invalidatesTags: ["Users", "Profile"],
     }),
 
+    createUser: builder.mutation<
+      ServerUser,
+      {
+        email: string;
+        password: string;
+        firstName: string;
+        lastName: string;
+        phone?: string;
+        role?: "admin" | "user";
+      }
+    >({
+      query: (body) => ({ url: "/users", method: "POST", body }),
+      transformResponse: (response: ApiSuccess<ServerUser>) => response.data,
+      invalidatesTags: ["Users"],
+    }),
+
     deleteUser: builder.mutation<{ success?: boolean }, string>({
       query: (id) => ({ url: `/users/${id}`, method: "DELETE" }),
       invalidatesTags: ["Users"],
@@ -179,6 +195,7 @@ export const {
   useUpdateProfileMutation,
   useUpdateNotificationPreferencesMutation,
   useGetUsersQuery,
+  useCreateUserMutation,
   useUpdateUserMutation,
   useDeleteUserMutation,
 } = authApi;

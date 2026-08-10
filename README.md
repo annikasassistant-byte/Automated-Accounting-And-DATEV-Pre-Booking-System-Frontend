@@ -1,26 +1,23 @@
 # Automated Accounting — Frontend
 
-Next.js auth portal wired to the Automated Accounting API.
+Next.js German accounting portal wired to the Automated Accounting API (Mongo-backed).
 
 ## Stack
 
-Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, RTK Query, Zustand, Socket.IO client.
+Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, RTK Query (`authApi` + `accountingApi`), Socket.IO client.
 
 ## Getting started
 
 ```bash
 npm install
+# .env.local — match server port (this repo uses 5001):
+# NEXT_PUBLIC_API_URL=http://localhost:5001
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) (or the port Next prints).
 
-Set `NEXT_PUBLIC_API_URL` to the API origin (see `.env.example`).
-
-- Local default: `http://localhost:5000`
-- Production Render: `https://automated-accounting-and-datev-pre-3lr4.onrender.com`
-
-## Demo credentials (from server seed)
+## Demo credentials
 
 | Role | Email | Password |
 |------|-------|----------|
@@ -30,12 +27,7 @@ Set `NEXT_PUBLIC_API_URL` to the API origin (see `.env.example`).
 ## Routes
 
 - **Auth:** `/login`, `/forgot-password`, `/verify-otp`, `/reset-password`, `/unauthorized`
-- **User & Admin accounting modules** (mirrored under `/dashboard/*` and `/admin/*`):
-  - Import: `/import/bank`, `/import/paypal`
-  - `/transactions`, `/patterns`, `/rules`, `/accounts`
-  - `/export`, `/duplicates`, `/reconciliation`, `/reports`
-  - `/settings/company`
-- **Admin only:** `/admin/users`
-- Profile & theme settings remain at `/profile` and `/settings`
+- **Accounting** (mirrored under `/dashboard/*` and `/admin/*`): import bank/paypal, transactions, open items, patterns, rules, accounts, DATEV export, duplicates, reconciliation, reports, company settings
+- **Admin only:** `/admin/users`, plus write actions on rules/accounts/company settings
 
-Accounting UI uses a client Zustand store (`aa-accounting`) with mock seed data until backend APIs are connected.
+Accounting domain data is loaded via **`accountingApi` → `/api/v1`** (not localStorage mocks).

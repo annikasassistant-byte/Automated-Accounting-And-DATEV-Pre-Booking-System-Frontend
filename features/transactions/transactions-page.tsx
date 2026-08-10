@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
@@ -12,12 +13,13 @@ import {
   type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { SearchInput } from "@/components/shared/search-input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -29,19 +31,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyPrecise, formatDate } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/types/accounting";
+import { accountLabel, ruleLabel } from "@/store/accounting-store";
 import {
-  accountLabel,
-  ruleLabel,
-  useAccountingStore,
-} from "@/store/accounting-store";
+  useGetTransactionsQuery,
+  useGetAccountsQuery,
+  useGetRulesQuery,
+  useBulkUpdateStatusMutation,
+} from "@/services/accountingApi";
 import { TransactionDetailDrawer } from "@/features/transactions/transaction-detail-drawer";
 
 export function TransactionsPage() {
-  const transactions = useAccountingStore((s) => s.transactions);
-  const accounts = useAccountingStore((s) => s.accounts);
-  const rules = useAccountingStore((s) => s.rules);
-  const bulkUpdateTransactions = useAccountingStore((s) => s.bulkUpdateTransactions);
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get("status") || undefined;
+  const { data: txData, isLoading: txLoading } = useGetTransactionsQuery({
+    limit: 500,
+    ...(statusFilter ? { status: statusFilter } : {}),
+  });
+  const { data: accounts = [] } = useGetAccountsQuery();
+  const { data: rules = [] } = useGetRulesQuery();
+  const [bulkUpdateStatus] = useBulkUpdateStatusMutation();
+
+  const transactions = txData?.items ?? [];
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -76,13 +88,6 @@ export function TransactionsPage() {
         cell: ({ row }) => formatDate(row.original.date),
       },
       {
-        accessorKey: "transactionId",
-        header: "Transaktions-ID",
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.transactionId}</span>
-        ),
-      },
-      {
         accessorKey: "source",
         header: "Quelle",
         cell: ({ row }) => <StatusBadge status={row.original.source} />,
@@ -104,11 +109,6 @@ export function TransactionsPage() {
         ),
       },
       {
-        accessorKey: "reference",
-        header: "Referenz",
-        cell: ({ row }) => row.original.reference || "—",
-      },
-      {
         accessorKey: "amount",
         header: "Betrag",
         cell: ({ row }) => (
@@ -118,37 +118,37 @@ export function TransactionsPage() {
         ),
       },
       {
-        accessorKey: "currency",
-        header: "Währung",
-      },
-      {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-1.5">
+            <StatusBadge status={row.original.status} />
+            {(row.original.systemMatched || row.original.booking?.konto === "1361") && (
+              <Badge variant="secondary" className="gap-1 text-[10px]">
+                <Zap className="h-3 w-3" />
+                1361
+              </Badge>
+            )}
+          </div>
+        ),
       },
       {
-        id: "matchedRule",
-        header: "Zugeordnete Regel",
-        accessorFn: (row) => ruleLabel(rules, row.matchedRuleId),
-        cell: ({ row }) => ruleLabel(rules, row.original.matchedRuleId),
+        id: "konto",
+        header: "Konto",
+        accessorFn: (row) =>
+          row.booking?.konto ?? accountLabel(accounts, row.expenseAccountId),
+        cell: ({ row }) =>
+          row.original.booking?.konto ??
+          accountLabel(accounts, row.original.expenseAccountId),
       },
       {
-        id: "suggestedRule",
-        header: "Vorgeschlagene Regel",
-        accessorFn: (row) => ruleLabel(rules, row.suggestedRuleId),
-        cell: ({ row }) => ruleLabel(rules, row.original.suggestedRuleId),
-      },
-      {
-        id: "expenseAccount",
-        header: "Aufwandskonto",
-        accessorFn: (row) => accountLabel(accounts, row.expenseAccountId),
-        cell: ({ row }) => accountLabel(accounts, row.original.expenseAccountId),
-      },
-      {
-        id: "offsetAccount",
+        id: "gegenkonto",
         header: "Gegenkonto",
-        accessorFn: (row) => accountLabel(accounts, row.offsetAccountId),
-        cell: ({ row }) => accountLabel(accounts, row.original.offsetAccountId),
+        accessorFn: (row) =>
+          row.booking?.gegenkonto ?? accountLabel(accounts, row.offsetAccountId),
+        cell: ({ row }) =>
+          row.original.booking?.gegenkonto ??
+          accountLabel(accounts, row.original.offsetAccountId),
       },
       {
         accessorKey: "exportStatus",
@@ -174,7 +174,7 @@ export function TransactionsPage() {
         ),
       },
     ],
-    [accounts, rules]
+    [accounts]
   );
 
   const table = useReactTable({
@@ -203,10 +203,6 @@ export function TransactionsPage() {
         t.status,
         t.source,
         t.currency,
-        ruleLabel(rules, t.matchedRuleId),
-        ruleLabel(rules, t.suggestedRuleId),
-        accountLabel(accounts, t.expenseAccountId),
-        accountLabel(accounts, t.offsetAccountId),
       ]
         .join(" ")
         .toLowerCase();
@@ -216,28 +212,33 @@ export function TransactionsPage() {
 
   const selectedIds = table.getFilteredSelectedRowModel().rows.map((r) => r.original.id);
 
-  const handleBulkApprove = () => {
+  const handleBulkStatus = async (status: string) => {
     if (!selectedIds.length) return;
-    bulkUpdateTransactions(selectedIds, { status: "approved" });
-    setRowSelection({});
-    toast.success(`${selectedIds.length} Transaktion(en) freigegeben`);
+    try {
+      await bulkUpdateStatus({ ids: selectedIds, status }).unwrap();
+      setRowSelection({});
+      toast.success(`${selectedIds.length} Transaktion(en) auf „${status}" gesetzt`);
+    } catch {
+      toast.error("Fehler beim Aktualisieren");
+    }
   };
 
-  const handleBulkReject = () => {
-    if (!selectedIds.length) return;
-    bulkUpdateTransactions(selectedIds, { status: "rejected" });
-    setRowSelection({});
-    toast.success(`${selectedIds.length} Transaktion(en) abgelehnt`);
-  };
+  if (txLoading) return <LoadingSkeleton variant="page" />;
 
   const hasRows = table.getRowModel().rows.length > 0;
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Transaktionen"
+        title={statusFilter === "conflict" ? "Konflikte" : statusFilter === "open" ? "Offene Posten" : "Transaktionen"}
         eyebrow="Buchhaltung"
-        description="Importierte Bewegungen prüfen, zuordnen und freigeben."
+        description={
+          statusFilter === "conflict"
+            ? "Konfliktbehaftete Buchungen prüfen und auflösen."
+            : statusFilter === "open"
+              ? "Offene Buchungen manuell zuordnen oder Regeln anlegen."
+              : "Importierte Bewegungen prüfen, zuordnen und freigeben."
+        }
       />
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border/40 bg-muted/15 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
@@ -252,7 +253,7 @@ export function TransactionsPage() {
             variant="outline"
             size="sm"
             disabled={!selectedIds.length}
-            onClick={handleBulkApprove}
+            onClick={() => handleBulkStatus("reviewed")}
           >
             Auswahl freigeben
           </Button>
@@ -260,9 +261,9 @@ export function TransactionsPage() {
             variant="destructive"
             size="sm"
             disabled={!selectedIds.length}
-            onClick={handleBulkReject}
+            onClick={() => handleBulkStatus("skipped")}
           >
-            Auswahl ablehnen
+            Auswahl überspringen
           </Button>
         </div>
       </div>

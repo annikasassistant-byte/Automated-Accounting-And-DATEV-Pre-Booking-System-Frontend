@@ -22,17 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatCurrencyPrecise, formatDate } from "@/lib/format";
 import type { AccountingRule, MatchMode } from "@/types/accounting";
-import { accountLabel, useAccountingStore } from "@/store/accounting-store";
+import { accountLabel } from "@/store/accounting-store";
+import {
+  useGetAccountsQuery,
+  useCreateRuleMutation,
+  useUpdateRuleMutation,
+} from "@/services/accountingApi";
 
 const MATCH_MODE_LABELS: Record<MatchMode, string> = {
   contains: "Enthält",
@@ -47,7 +43,6 @@ const STEPS = [
   "Aufwandskonto",
   "Gegenkonto",
   "Priorität",
-  "Vorschau",
   "Speichern",
 ] as const;
 
@@ -74,35 +69,6 @@ const EMPTY_DRAFT: RuleDraft = {
   enabled: true,
 };
 
-function matchesPreview(
-  hay: string,
-  keywords: string[],
-  matchMode: MatchMode,
-  caseSensitive: boolean
-) {
-  const text = caseSensitive ? hay : hay.toLowerCase();
-  return keywords.some((kw) => {
-    const needle = caseSensitive ? kw : kw.toLowerCase();
-    switch (matchMode) {
-      case "starts_with":
-        return text.startsWith(needle);
-      case "ends_with":
-        return text.endsWith(needle);
-      case "exact":
-        return text.trim() === needle.trim();
-      case "regex":
-        try {
-          return new RegExp(kw, caseSensitive ? "" : "i").test(hay);
-        } catch {
-          return false;
-        }
-      case "contains":
-      default:
-        return text.includes(needle);
-    }
-  });
-}
-
 interface RuleWizardDialogProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -114,9 +80,9 @@ export function RuleWizardDialog({
   onOpenChange,
   initial,
 }: RuleWizardDialogProps) {
-  const accounts = useAccountingStore((s) => s.accounts);
-  const transactions = useAccountingStore((s) => s.transactions);
-  const upsertRule = useAccountingStore((s) => s.upsertRule);
+  const { data: accounts = [] } = useGetAccountsQuery();
+  const [createRule] = useCreateRuleMutation();
+  const [updateRule] = useUpdateRuleMutation();
 
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<RuleDraft>(EMPTY_DRAFT);
@@ -147,21 +113,11 @@ export function RuleWizardDialog({
   );
 
   const expenseAccounts = accounts.filter(
-    (a) => a.type === "expense" && a.status === "active"
+    (a) => (a.type === "expense" || a.type === "revenue" || a.type === "other") && a.status === "active"
   );
   const offsetAccounts = accounts.filter(
-    (a) => a.type === "offset" && a.status === "active"
+    (a) => (a.type === "asset" || a.type === "clearing" || a.type === "liability") && a.status === "active"
   );
-
-  const previewTxs = useMemo(() => {
-    if (!keywords.length) return [];
-    return transactions
-      .filter((t) => {
-        const hay = `${t.counterparty} ${t.description} ${t.reference}`;
-        return matchesPreview(hay, keywords, draft.matchMode, draft.caseSensitive);
-      })
-      .slice(0, 25);
-  }, [transactions, keywords, draft.matchMode, draft.caseSensitive]);
 
   const progressValue = ((step + 1) / STEPS.length) * 100;
 
@@ -180,24 +136,46 @@ export function RuleWizardDialog({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!draft.name.trim() || !keywords.length || !draft.expenseAccountId || !draft.offsetAccountId) {
       toast.error("Bitte alle Pflichtfelder ausfüllen");
       return;
     }
-    const rule = upsertRule({
-      id: draft.id,
+    const body = {
       name: draft.name.trim(),
       keywords,
+      actions: {
+        konto: draft.expenseAccountId,
+        gegenkonto: draft.offsetAccountId,
+        buKey: "",
+        bookingTextTemplate: draft.name.trim(),
+      },
+      conditions: [
+        {
+          field: "rawDescription",
+          operator: draft.matchMode === "contains" ? "any_of" : draft.matchMode,
+          value: draft.matchMode === "contains" ? keywords : keywords[0],
+          caseSensitive: draft.caseSensitive,
+        },
+      ],
       matchMode: draft.matchMode,
       caseSensitive: draft.caseSensitive,
-      expenseAccountId: draft.expenseAccountId,
-      offsetAccountId: draft.offsetAccountId,
       priority: draft.priority,
       enabled: draft.enabled,
-    });
-    toast.success(draft.id ? `Regel „${rule.name}“ aktualisiert` : `Regel „${rule.name}“ erstellt`);
-    onOpenChange(false);
+    };
+
+    try {
+      if (draft.id) {
+        await updateRule({ id: draft.id, body }).unwrap();
+        toast.success(`Regel „${draft.name}" aktualisiert`);
+      } else {
+        await createRule(body).unwrap();
+        toast.success(`Regel „${draft.name}" erstellt`);
+      }
+      onOpenChange(false);
+    } catch {
+      toast.error("Fehler beim Speichern der Regel");
+    }
   };
 
   return (
@@ -305,7 +283,7 @@ export function RuleWizardDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {expenseAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
+                    <SelectItem key={a.number} value={a.number}>
                       {a.number} · {a.name}
                     </SelectItem>
                   ))}
@@ -332,7 +310,7 @@ export function RuleWizardDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {offsetAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
+                    <SelectItem key={a.number} value={a.number}>
                       {a.number} · {a.name}
                     </SelectItem>
                   ))}
@@ -370,46 +348,6 @@ export function RuleWizardDialog({
           )}
 
           {step === 4 && (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {previewTxs.length} passende Transaktion(en) (max. 25 angezeigt)
-              </p>
-              <div className="max-h-56 overflow-auto rounded-lg border border-border/40">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Datum</TableHead>
-                      <TableHead>Gegenpartei</TableHead>
-                      <TableHead>Betrag</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {previewTxs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">
-                          Keine Treffer
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      previewTxs.map((t) => (
-                        <TableRow key={t.id}>
-                          <TableCell>{formatDate(t.date)}</TableCell>
-                          <TableCell className="max-w-[180px] truncate">
-                            {t.counterparty}
-                          </TableCell>
-                          <TableCell className="tabular-nums">
-                            {formatCurrencyPrecise(t.amount, t.currency)}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-
-          {step === 5 && (
             <div className="space-y-3 rounded-xl border border-border/40 bg-muted/20 p-4 text-sm">
               <p>
                 <span className="text-muted-foreground">Name:</span>{" "}
@@ -435,10 +373,6 @@ export function RuleWizardDialog({
               <p>
                 <span className="text-muted-foreground">Priorität:</span>{" "}
                 {draft.priority} · {draft.enabled ? "Aktiv" : "Inaktiv"}
-              </p>
-              <p>
-                <span className="text-muted-foreground">Vorschau-Treffer:</span>{" "}
-                {previewTxs.length}
               </p>
             </div>
           )}
