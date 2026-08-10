@@ -14,8 +14,8 @@ export default function UnauthorizedPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-destructive">403</p>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Zugriff verweigert</h1>
         <p className="text-base leading-relaxed text-muted-foreground">
-          Sie haben keine Berechtigung, diese Seite anzuzeigen. Investoren können nur auf
-          persönliche Portfoliodaten zugreifen.
+          Sie haben keine Berechtigung, diese Seite anzuzeigen. Administratoren und Benutzer
+          sehen nur die Bereiche, die ihrer Rolle entsprechen.
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-3">
