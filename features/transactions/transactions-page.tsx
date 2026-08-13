@@ -53,7 +53,15 @@ export function TransactionsPage() {
   const { data: rules = [] } = useGetRulesQuery();
   const [bulkUpdateStatus] = useBulkUpdateStatusMutation();
 
-  const transactions = txData?.items ?? [];
+  const transactions = useMemo(() => {
+    const items = txData?.items ?? [];
+    if (statusFilter === "open" || statusFilter === "conflict") {
+      return items.filter(
+        (t) => t.bookability !== "skipped" && t.bookability !== "balance_only"
+      );
+    }
+    return items;
+  }, [txData?.items, statusFilter]);
 
   const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -100,13 +108,20 @@ export function TransactionsPage() {
         ),
       },
       {
-        accessorKey: "description",
-        header: "Beschreibung",
-        cell: ({ row }) => (
-          <span className="max-w-[180px] truncate block text-muted-foreground">
-            {row.original.description || "—"}
-          </span>
-        ),
+        id: "purpose",
+        accessorFn: (row) => row.purpose || row.description,
+        header: "Verwendungszweck",
+        cell: ({ row }) => {
+          const text = row.original.purpose || row.original.description || "—";
+          return (
+            <span
+              title={text === "—" ? undefined : text}
+              className="block min-w-[220px] max-w-[320px] whitespace-normal break-words text-sm"
+            >
+              {text}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "amount",
@@ -198,7 +213,9 @@ export function TransactionsPage() {
       const hay = [
         t.transactionId,
         t.counterparty,
+        t.purpose,
         t.description,
+        t.rawDescription,
         t.reference,
         t.status,
         t.source,

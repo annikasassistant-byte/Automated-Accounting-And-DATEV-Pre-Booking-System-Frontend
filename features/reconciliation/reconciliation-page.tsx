@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrencyPrecise, formatDateTime } from "@/lib/format";
+import { formatBookingPeriod, formatCurrencyPrecise } from "@/lib/format";
 import {
   useGetReconciliationSummaryQuery,
   useGetImportsQuery,
@@ -83,13 +83,13 @@ export function ReconciliationPage() {
       <PageHeader
         title="Abstimmung"
         eyebrow="Kontrolle"
-        description="Importierte Beträge mit DATEV-Exporten abgleichen und PayPal-Guthaben prüfen."
+        description="Vergleicht importierte Buchungsbeträge mit DATEV-Exporten im gewählten Buchungszeitraum. Das ist kein Abgleich mit dem Kontostand 1201. PayPal-Guthaben unten kommt aus der CSV-Spalte Guthaben des gewählten Imports."
         action={<StatusBadge status={summary.validationStatus} />}
       />
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Zeitraum</CardTitle>
+          <CardTitle className="text-base">Buchungszeitraum</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
@@ -219,10 +219,13 @@ export function ReconciliationPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Wallet className="h-4 w-4" />
-            PayPal-Guthaben je Import
+            PayPal-Guthaben (CSV, je Import)
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Laufendes Guthaben aus der PayPal-CSV-Spalte „Guthaben“ für genau diesen Import — kein Abgleich mit Konto 1203.
+          </p>
           {paypalImports.length === 0 ? (
             <EmptyState
               title="Kein PayPal-Import"
@@ -242,7 +245,7 @@ export function ReconciliationPage() {
                   <SelectContent>
                     {paypalImports.map((imp) => (
                       <SelectItem key={imp.id} value={imp.id}>
-                        {imp.fileName} · {imp.importedAt ? formatDateTime(imp.importedAt) : "—"} ·{" "}
+                        {imp.fileName} · {formatBookingPeriod(imp.periodStart, imp.periodEnd)} ·{" "}
                         {imp.rowCount} Zeilen
                       </SelectItem>
                     ))}

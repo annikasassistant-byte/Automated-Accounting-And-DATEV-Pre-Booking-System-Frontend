@@ -45,3 +45,14 @@ export function formatDateTime(date: string): string {
     minute: "2-digit",
   }).format(new Date(date));
 }
+
+/** Booking-date range from an import (not the upload timestamp). */
+export function formatBookingPeriod(
+  from?: string | Date | null,
+  to?: string | Date | null
+): string {
+  if (!from && !to) return "—";
+  const start = from ? formatDate(from) : "—";
+  const end = to ? formatDate(to) : start;
+  return start === end ? start : `${start} – ${end}`;
+}

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { formatCurrencyPrecise, formatDateTime } from "@/lib/format";
+import { formatCurrencyPrecise, formatDateTime, formatBookingPeriod } from "@/lib/format";
 import type { TransactionSource } from "@/types/accounting";
 import {
   useImportBankMutation,
@@ -41,6 +41,8 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
     successCount: number;
     errorCount: number;
     status?: string;
+    periodStart?: string | null;
+    periodEnd?: string | null;
     balanceCheck?: {
       expectedGuthaben: number;
       calculatedGuthaben: number;
@@ -78,6 +80,8 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
         successCount: batch.successCount,
         errorCount: batch.errorCount,
         status: batch.status,
+        periodStart: batch.periodStart,
+        periodEnd: batch.periodEnd,
         balanceCheck: batch.balanceCheck,
         message: batch.message,
       });
@@ -208,11 +212,16 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
               </p>
             </div>
             {result.status !== "duplicate_file" && (
-              <div className="flex items-center gap-3">
-                <StatusBadge status={source} />
-                <span className="text-sm text-muted-foreground tabular-nums">
-                  {result.rowCount} Zeilen verarbeitet
-                </span>
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-3">
+                  <StatusBadge status={source} />
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {result.rowCount} Zeilen verarbeitet
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Buchungszeitraum: {formatBookingPeriod(result.periodStart, result.periodEnd)}
+                </p>
               </div>
             )}
             {result.balanceCheck && (
@@ -246,7 +255,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
           <div>
             <CardTitle className="text-base">Import-Historie</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Letzte {source === "bank" ? "Bank" : "PayPal"}-Imports aus MongoDB
+              Buchungszeitraum = min/max Buchungsdatum der CSV. „Importiert“ ist der Upload-Zeitpunkt.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => void refetchHistory()}>
@@ -275,9 +284,12 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
                     <th className="px-3 py-2 font-medium">Datei</th>
                     <th className="px-3 py-2 font-medium">Status</th>
                     <th className="px-3 py-2 font-medium">Zeilen</th>
+                    <th className="px-3 py-2 font-medium">Buchungszeitraum</th>
                     <th className="px-3 py-2 font-medium">Matched / Offen / Konflikt</th>
-                    <th className="px-3 py-2 font-medium">Guthaben</th>
-                    <th className="px-3 py-2 font-medium">Datum</th>
+                    <th className="px-3 py-2 font-medium">
+                      {source === "paypal" ? "CSV-Guthaben" : "Guthaben"}
+                    </th>
+                    <th className="px-3 py-2 font-medium">Importiert</th>
                     <th className="px-3 py-2 font-medium" />
                   </tr>
                 </thead>
@@ -294,6 +306,9 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
                         <StatusBadge status={batch.status} />
                       </td>
                       <td className="px-3 py-2 tabular-nums">{batch.rowCount}</td>
+                      <td className="px-3 py-2 tabular-nums">
+                        {formatBookingPeriod(batch.periodStart, batch.periodEnd)}
+                      </td>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">
                         {batch.matchedCount ?? 0} / {batch.openCount ?? 0} /{" "}
                         {batch.conflictCount ?? 0}

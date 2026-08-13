@@ -126,7 +126,10 @@ export interface Transaction {
   transactionId: string;
   source: TransactionSource;
   counterparty: string;
+  /** Verwendungszweck from CSV (`purpose` on the server). */
+  purpose: string;
   description: string;
+  rawDescription?: string;
   reference: string;
   amount: number;
   currency: string;
@@ -163,6 +166,8 @@ export interface ServerTransaction {
   counterparty?: string;
   purpose?: string;
   description?: string;
+  rawDescription?: string;
+  bank?: { bookingText?: string | null; customerRef?: string | null };
   reference?: string;
   status?: string;
   booking?: TransactionBooking;

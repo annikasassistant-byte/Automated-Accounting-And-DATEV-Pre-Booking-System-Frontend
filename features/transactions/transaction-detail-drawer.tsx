@@ -168,9 +168,20 @@ export function TransactionDetailDrawer({
                     <dd className="font-medium">{tx.counterparty}</dd>
                   </div>
                   <div className="sm:col-span-2">
-                    <dt className="text-muted-foreground">Beschreibung</dt>
-                    <dd>{tx.description || "—"}</dd>
+                    <dt className="text-muted-foreground">Verwendungszweck</dt>
+                    <dd className="whitespace-pre-wrap break-words font-medium">
+                      {tx.purpose || tx.description || "—"}
+                    </dd>
                   </div>
+                  {tx.rawDescription &&
+                    tx.rawDescription !== (tx.purpose || tx.description) && (
+                      <div className="sm:col-span-2">
+                        <dt className="text-muted-foreground">Rohbeschreibung</dt>
+                        <dd className="whitespace-pre-wrap break-words text-muted-foreground">
+                          {tx.rawDescription}
+                        </dd>
+                      </div>
+                    )}
                   <div>
                     <dt className="text-muted-foreground">Referenz</dt>
                     <dd>{tx.reference || "—"}</dd>
@@ -327,7 +338,7 @@ export function TransactionDetailDrawer({
                 onOpenChange={setRuleDialogOpen}
                 initial={{
                   name: tx.counterparty || "",
-                  keywords: [tx.counterparty, tx.description].filter(Boolean) as string[],
+                  keywords: [tx.counterparty, tx.purpose || tx.description].filter(Boolean) as string[],
                   expenseAccountId: tx.booking?.konto ?? tx.expenseAccountId ?? "",
                   offsetAccountId: tx.booking?.gegenkonto ?? tx.offsetAccountId ?? "",
                 }}
