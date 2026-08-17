@@ -9,6 +9,7 @@ import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrencyPrecise, formatDate } from "@/lib/format";
+import { TableScroll } from "@/components/shared/table-scroll";
 import type { DuplicateItem, DuplicateTxnPreview } from "@/types/accounting";
 import {
   useGetDuplicatesQuery,
@@ -45,23 +46,23 @@ function DuplicateCard({
             {rows.length} betroffene Transaktion{rows.length === 1 ? "" : "en"}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" disabled={busy} onClick={onIgnore}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+          <Button variant="outline" size="sm" className="min-h-11 w-full sm:w-auto" disabled={busy} onClick={onIgnore}>
             <Ban className="mr-1.5 h-3.5 w-3.5" />
             Ignorieren
           </Button>
-          <Button variant="outline" size="sm" disabled={busy} onClick={onKeepBoth}>
+          <Button variant="outline" size="sm" className="min-h-11 w-full sm:w-auto" disabled={busy} onClick={onKeepBoth}>
             <Split className="mr-1.5 h-3.5 w-3.5" />
             Beide behalten
           </Button>
-          <Button size="sm" disabled={busy || rows.length < 2} onClick={onMerge}>
+          <Button size="sm" className="min-h-11 w-full sm:w-auto" disabled={busy || rows.length < 2} onClick={onMerge}>
             <GitMerge className="mr-1.5 h-3.5 w-3.5" />
             Zusammenführen
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto rounded-lg border">
+        <TableScroll>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
               <tr>
@@ -99,7 +100,7 @@ function DuplicateCard({
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       </CardContent>
     </Card>
   );

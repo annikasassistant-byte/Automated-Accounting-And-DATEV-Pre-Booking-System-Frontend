@@ -33,6 +33,7 @@ import { ChevronLeft, ChevronRight, Columns3, FileDown, FileText } from "lucide-
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TableScroll } from "@/components/shared/table-scroll";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -208,7 +209,7 @@ export function DataTable<TData, TValue>({
           className="overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
-          <div className="max-h-[min(560px,65vh)] overflow-auto">
+          <TableScroll className="max-h-[min(560px,65vh)]">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-muted/90 backdrop-blur-md">
                 {table.getHeaderGroups().map((hg) => (
@@ -241,7 +242,7 @@ export function DataTable<TData, TValue>({
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </TableScroll>
         </div>
       )}
 

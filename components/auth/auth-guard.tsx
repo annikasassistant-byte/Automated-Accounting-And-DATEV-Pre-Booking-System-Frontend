@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/auth-store";
 import type { UserRole } from "@/types";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
@@ -15,7 +14,6 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
-  const pathname = usePathname();
   const { isAuthenticated, user, hasRole, setUser, logout } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -73,7 +71,7 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     if (!isAuthenticated || !user) {
       redirectingRef.current = true;
       // Hard navigation avoids App Router + portal removeChild races.
-      hardNavigate(`/login?redirect=${encodeURIComponent(pathname)}`);
+      hardNavigate("/login", { replace: true });
       return;
     }
     if (allowedRoles && !allowedRoles.some((r) => hasRole(r))) {
@@ -87,7 +85,6 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     user,
     allowedRoles,
     hasRole,
-    pathname,
   ]);
 
   if (!hydrated || !sessionChecked || !isAuthenticated || !user) {

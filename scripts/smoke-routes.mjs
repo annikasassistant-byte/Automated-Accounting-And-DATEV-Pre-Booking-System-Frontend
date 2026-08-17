@@ -15,17 +15,33 @@ const PUBLIC_ROUTES = [
   "/unauthorized",
 ];
 
-const USER_ROUTES = [
-  "/dashboard",
-  "/dashboard/profile",
-  "/dashboard/settings",
+const ACCOUNTING_PATHS = [
+  "/import/bank",
+  "/import/paypal",
+  "/transactions",
+  "/transactions?status=open",
+  "/transactions?status=conflict",
+  "/patterns",
+  "/rules",
+  "/accounts",
+  "/accounts/overview",
+  "/export",
+  "/duplicates",
+  "/reconciliation",
+  "/reports",
+  "/settings",
+  "/settings/company",
+  "/profile",
 ];
+
+const USER_ROUTES = ["/dashboard", ...ACCOUNTING_PATHS.map((p) => `/dashboard${p}`)];
 
 const ADMIN_ROUTES = [
   "/admin/dashboard",
   "/admin/users",
+  "/admin/settings/system-policies",
   "/admin/settings",
-  "/admin/profile",
+  ...ACCOUNTING_PATHS.map((p) => `/admin${p}`),
 ];
 
 async function login(page, email, password) {
@@ -56,11 +72,13 @@ async function visit(page, path, errors) {
       bodyText.includes("Application error") ||
       bodyText.includes("Unhandled Runtime Error") ||
       bodyText.includes("Something went wrong");
+    const overflowX = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
     errors.push({
       path,
       status,
       title,
       crashed,
+      overflowX,
       consoleErrors: [...pageErrors],
       finalUrl: page.url(),
     });
@@ -70,6 +88,7 @@ async function visit(page, path, errors) {
       status: 0,
       title: "",
       crashed: true,
+      overflowX: false,
       consoleErrors: [...pageErrors, String(e)],
       finalUrl: page.url(),
     });
@@ -110,6 +129,43 @@ async function main() {
     await visit(adminPage, path, errors);
   }
   await adminPage.close();
+
+  const phonePublic = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  await visit(phonePublic, "/login", errors);
+  await phonePublic.close();
+
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 360, height: 800 },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 768 },
+    { width: 1280, height: 800 },
+    { width: 1440, height: 900 },
+    { width: 1920, height: 1080 },
+  ]) {
+    const page = await browser.newPage({ viewport });
+    await visit(page, `/login#${viewport.width}`, errors);
+    await page.close();
+  }
+
+  const phoneAdmin = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  await login(
+    phoneAdmin,
+    process.env.SMOKE_ADMIN_EMAIL || "admin@automatedaccounting.local",
+    process.env.SMOKE_ADMIN_PASSWORD || "ChangeMeAdmin123!"
+  );
+  await visit(phoneAdmin, "/admin/transactions", errors);
+  await visit(phoneAdmin, "/admin/accounts/overview", errors);
+  await phoneAdmin.close();
+
+  const phoneUser = await browser.newPage({ viewport: { width: 375, height: 812 } });
+  await login(
+    phoneUser,
+    process.env.SMOKE_USER_EMAIL || "user@automatedaccounting.local",
+    process.env.SMOKE_USER_PASSWORD || "ChangeMeUser123!"
+  );
+  await visit(phoneUser, "/dashboard/accounts/overview", errors);
+  await phoneUser.close();
 
   await browser.close();
 

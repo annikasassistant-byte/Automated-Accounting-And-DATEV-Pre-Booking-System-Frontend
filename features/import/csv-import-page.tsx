@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrencyPrecise, formatDateTime, formatBookingPeriod } from "@/lib/format";
+import { TableScroll } from "@/components/shared/table-scroll";
 import type { TransactionSource } from "@/types/accounting";
 import {
   useImportBankMutation,
@@ -141,7 +142,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
           onDragOver={(e) => e.preventDefault()}
           onDrop={onDrop}
         >
-          <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+          <CardContent className="flex w-full flex-col items-center justify-center gap-4 px-4 py-12 text-center sm:py-16">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Upload className="h-6 w-6" />
             </div>
@@ -161,7 +162,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
                   if (f) void processFile(f);
                 }}
               />
-              <Button render={<span />} className="cursor-pointer">
+              <Button render={<span />} className="min-h-11 w-full max-w-xs cursor-pointer">
                 <FileUp className="mr-2 h-4 w-4" />
                 Datei durchsuchen
               </Button>
@@ -251,7 +252,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <CardTitle className="text-base">Import-Historie</CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -277,7 +278,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
               description="Laden Sie eine CSV-Datei hoch, um die Historie zu füllen."
             />
           ) : (
-            <div className="overflow-x-auto rounded-lg border">
+            <TableScroll>
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                   <tr>
@@ -348,7 +349,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
           )}
         </CardContent>
       </Card>

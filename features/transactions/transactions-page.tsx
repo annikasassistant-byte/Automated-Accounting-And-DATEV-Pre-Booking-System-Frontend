@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
@@ -37,21 +35,38 @@ import { accountLabel, ruleLabel } from "@/store/accounting-store";
 import {
   useGetTransactionsQuery,
   useGetAccountsQuery,
-  useGetRulesQuery,
   useBulkUpdateStatusMutation,
 } from "@/services/accountingApi";
 import { TransactionDetailDrawer } from "@/features/transactions/transaction-detail-drawer";
+import { TableScroll } from "@/components/shared/table-scroll";
 
 export function TransactionsPage() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get("status") || undefined;
+  const sourceParam = searchParams.get("source");
+  const sourceFilter =
+    sourceParam === "bank" || sourceParam === "paypal" ? sourceParam : undefined;
+
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const { data: txData, isLoading: txLoading } = useGetTransactionsQuery({
-    limit: 500,
+    page,
+    limit: PAGE_SIZE,
     ...(statusFilter ? { status: statusFilter } : {}),
+    ...(sourceFilter ? { source: sourceFilter } : {}),
+    ...(globalFilter.trim() ? { search: globalFilter.trim() } : {}),
   });
   const { data: accounts = [] } = useGetAccountsQuery();
-  const { data: rules = [] } = useGetRulesQuery();
   const [bulkUpdateStatus] = useBulkUpdateStatusMutation();
+
+  const total = txData?.meta?.total ?? txData?.items.length ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const transactions = useMemo(() => {
     const items = txData?.items ?? [];
@@ -63,11 +78,9 @@ export function TransactionsPage() {
     return items;
   }, [txData?.items, statusFilter]);
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: "date", desc: true }]);
-  const [globalFilter, setGlobalFilter] = useState("");
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, sourceFilter]);
 
   const columns = useMemo<ColumnDef<Transaction>[]>(
     () => [
@@ -232,39 +245,15 @@ export function TransactionsPage() {
   const table = useReactTable({
     data: transactions,
     columns,
-    state: { sorting, globalFilter, rowSelection },
+    state: { sorting, rowSelection, pagination: { pageIndex: page - 1, pageSize: PAGE_SIZE } },
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     enableRowSelection: true,
+    manualPagination: true,
+    pageCount,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getRowId: (row) => row.id,
-    initialState: { pagination: { pageSize: 10 } },
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const q = String(filterValue).toLowerCase().trim();
-      if (!q) return true;
-      const t = row.original;
-      const hay = [
-        t.transactionId,
-        t.counterparty,
-        t.purpose,
-        t.description,
-        t.article,
-        t.paypalSubject,
-        t.paypalNote,
-        t.rawDescription,
-        t.reference,
-        t.status,
-        t.source,
-        t.currency,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    },
   });
 
   const selectedIds = table.getFilteredSelectedRowModel().rows.map((r) => r.original.id);
@@ -301,14 +290,18 @@ export function TransactionsPage() {
       <div className="flex flex-col gap-3 rounded-2xl border border-border/40 bg-muted/15 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <SearchInput
           value={globalFilter}
-          onChange={setGlobalFilter}
+          onChange={(v) => {
+            setGlobalFilter(v);
+            setPage(1);
+          }}
           placeholder="Transaktionen durchsuchen…"
           className="w-full sm:max-w-sm"
         />
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
           <Button
             variant="outline"
             size="sm"
+            className="min-h-11 w-full sm:w-auto"
             disabled={!selectedIds.length}
             onClick={() => handleBulkStatus("reviewed")}
           >
@@ -317,6 +310,7 @@ export function TransactionsPage() {
           <Button
             variant="destructive"
             size="sm"
+            className="min-h-11 w-full sm:w-auto"
             disabled={!selectedIds.length}
             onClick={() => handleBulkStatus("skipped")}
           >
@@ -337,7 +331,8 @@ export function TransactionsPage() {
           className="overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
-          <div className="max-h-[min(640px,70vh)] overflow-auto">
+          <TableScroll className="max-h-[min(640px,70vh)] p-0">
+            <div className="min-w-[720px]">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-muted/90 backdrop-blur-md">
                 {table.getHeaderGroups().map((hg) => (
@@ -383,7 +378,8 @@ export function TransactionsPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          </TableScroll>
         </div>
       )}
 
@@ -395,21 +391,19 @@ export function TransactionsPage() {
             </span>
           )}
           Seite{" "}
-          <span className="font-medium text-foreground">
-            {table.getState().pagination.pageIndex + 1}
-          </span>{" "}
+          <span className="font-medium text-foreground">{page}</span>
+          {" "}
           von{" "}
-          <span className="font-medium text-foreground">
-            {table.getPageCount() || 1}
-          </span>
+          <span className="font-medium text-foreground">{pageCount}</span>
+          <span className="ml-2">· {total} Buchungen</span>
         </p>
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2 sm:w-auto">
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            className="min-h-11 flex-1 rounded-xl sm:flex-none"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
           >
             <ChevronLeft className="h-4 w-4" />
             Zurück
@@ -417,9 +411,9 @@ export function TransactionsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-xl"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            className="min-h-11 flex-1 rounded-xl sm:flex-none"
+            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+            disabled={page >= pageCount}
           >
             Weiter
             <ChevronRight className="h-4 w-4" />

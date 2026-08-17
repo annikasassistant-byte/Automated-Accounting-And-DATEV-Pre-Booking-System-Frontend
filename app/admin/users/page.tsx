@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { SearchInput } from "@/components/shared/search-input";
+import { TableScroll } from "@/components/shared/table-scroll";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,11 +111,12 @@ export default function AdminUsersPage() {
           placeholder="Name oder E-Mail suchen…"
           className="max-w-sm"
         />
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={() => refetch()}>
             Aktualisieren
           </Button>
           <Button
+            className="min-h-11 w-full sm:w-auto"
             onClick={() => {
               setForm(emptyForm);
               setCreateOpen(true);
@@ -127,6 +129,7 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="rounded-xl border border-border/50">
+        <TableScroll>
         <Table>
           <TableHeader>
             <TableRow>
@@ -229,6 +232,7 @@ export default function AdminUsersPage() {
             )}
           </TableBody>
         </Table>
+        </TableScroll>
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -250,7 +254,7 @@ export default function AdminUsersPage() {
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="user-first">Vorname</Label>
                 <Input

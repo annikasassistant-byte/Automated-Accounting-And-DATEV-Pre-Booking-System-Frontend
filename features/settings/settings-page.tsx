@@ -66,11 +66,11 @@ export function SettingsPage() {
           <CardDescription>Passen Sie das Erscheinungsbild des Portals an.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Label>Design</Label>
             {mounted ? (
               <Select value={theme} onValueChange={(v) => v && setTheme(v)}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Design" />
                 </SelectTrigger>
                 <SelectContent>
@@ -80,7 +80,7 @@ export function SettingsPage() {
                 </SelectContent>
               </Select>
             ) : (
-              <div className="h-9 w-40 rounded-lg border border-border/50 bg-muted/30" />
+              <div className="h-9 w-full rounded-lg border border-border/50 bg-muted/30 sm:w-40" />
             )}
           </div>
         </CardContent>
@@ -92,8 +92,8 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {PREF_FIELDS.map(({ key, label }) => (
-            <div key={key} className="flex items-center justify-between">
-              <Label htmlFor={key}>{label}</Label>
+            <div key={key} className="flex items-center justify-between gap-3">
+              <Label htmlFor={key} className="min-w-0 flex-1 leading-snug">{label}</Label>
               <Switch
                 id={key}
                 checked={prefs[key]}

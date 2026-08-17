@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyPrecise, formatDate } from "@/lib/format";
+import { TableScroll } from "@/components/shared/table-scroll";
 import {
   usePreviewExportMutation,
   useValidateExportMutation,
@@ -161,7 +162,7 @@ export function DatevExportPage() {
         eyebrow="Export"
         description="Zeitraum wählen, validieren und EXTF-Buchungsstapel herunterladen."
         action={
-          <Button onClick={handleGenerate} disabled={creating}>
+          <Button onClick={handleGenerate} disabled={creating} className="min-h-11 w-full sm:w-auto">
             <FileSpreadsheet className="mr-2 h-4 w-4" />
             DATEV CSV erzeugen
           </Button>
@@ -190,7 +191,7 @@ export function DatevExportPage() {
               </Select>
             </div>
             {period === "custom" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="from">Von</Label>
                   <Input
@@ -217,11 +218,11 @@ export function DatevExportPage() {
                 {from} – {to}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handlePreview}>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={handlePreview}>
                 Vorschau
               </Button>
-              <Button variant="outline" size="sm" onClick={handleValidate}>
+              <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={handleValidate}>
                 Validieren
               </Button>
             </div>
@@ -301,6 +302,7 @@ export function DatevExportPage() {
               description="Erzeugen Sie den ersten DATEV-Buchungsstapel."
             />
           ) : (
+            <TableScroll>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -342,6 +344,7 @@ export function DatevExportPage() {
                 ))}
               </TableBody>
             </Table>
+            </TableScroll>
           )}
         </CardContent>
       </Card>

@@ -106,7 +106,7 @@ export default function VerifyOtpPage() {
           <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Einmalpasswort
           </Label>
-          <div className="flex justify-between gap-2" onPaste={onPaste}>
+          <div className="flex min-w-0 justify-between gap-1.5 sm:gap-2" onPaste={onPaste}>
             {digits.map((d, i) => (
               <Input
                 key={i}
@@ -119,7 +119,7 @@ export default function VerifyOtpPage() {
                 value={d}
                 onChange={(e) => updateDigit(i, e.target.value)}
                 onKeyDown={(e) => onKeyDown(i, e)}
-                className="h-12 w-11 rounded-xl px-0 text-center text-lg font-semibold tabular-financial sm:h-14 sm:w-12"
+                className="h-11 min-h-11 min-w-0 flex-1 rounded-xl px-0 text-center text-lg font-semibold tabular-financial sm:h-14 sm:w-12 sm:flex-none"
                 aria-label={`Ziffer ${i + 1}`}
               />
             ))}

@@ -90,7 +90,7 @@ export function CompanySettingsPage() {
       />
 
       <Tabs defaultValue="company">
-        <TabsList>
+        <TabsList className="h-auto w-full flex-wrap justify-start">
           <TabsTrigger value="company">Firma</TabsTrigger>
           <TabsTrigger value="datev">DATEV</TabsTrigger>
           <TabsTrigger value="links">Zuordnungen</TabsTrigger>
@@ -159,7 +159,7 @@ export function CompanySettingsPage() {
               </div>
               {isAdmin && (
                 <div className="sm:col-span-2">
-                  <Button onClick={saveCompany}>
+                  <Button className="min-h-11 w-full sm:w-auto" onClick={saveCompany}>
                     <Save className="mr-2 h-4 w-4" />
                     Firma speichern
                   </Button>
@@ -255,7 +255,7 @@ export function CompanySettingsPage() {
               )}
               {isAdmin && (
                 <div className="sm:col-span-2">
-                  <Button onClick={saveDatev}>
+                  <Button className="min-h-11 w-full sm:w-auto" onClick={saveDatev}>
                     <Save className="mr-2 h-4 w-4" />
                     DATEV speichern
                   </Button>

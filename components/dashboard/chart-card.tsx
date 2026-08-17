@@ -20,9 +20,9 @@ export function ChartCard({
   action,
 }: ChartCardProps) {
   return (
-    <div className={cn("h-full", className)}>
+    <div className={cn("h-full min-w-0", className)}>
       <Card
-        className="h-full overflow-hidden rounded-2xl border-border/40 bg-card/80 shadow-none backdrop-blur-sm"
+        className="h-full min-w-0 overflow-hidden rounded-2xl border-border/40 bg-card/80 shadow-none backdrop-blur-sm"
         style={{ boxShadow: "var(--shadow-card)" }}
       >
         <CardHeader className="flex flex-row items-start justify-between space-y-0 border-b border-border/30 bg-muted/20 px-5 py-4">

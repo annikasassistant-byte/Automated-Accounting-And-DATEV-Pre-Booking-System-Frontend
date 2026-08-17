@@ -351,25 +351,26 @@ export function TransactionDetailDrawer({
               </section>
             </div>
 
-            <SheetFooter className="border-t border-border/40 sm:flex-row">
+            <SheetFooter className="flex-col border-t border-border/40 sm:flex-row">
               {isAdmin && (
                 <Button
                   variant="outline"
+                  className="min-h-11 w-full sm:w-auto"
                   onClick={() => setRuleDialogOpen(true)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Regel daraus erstellen
                 </Button>
               )}
-              <Button variant="outline" onClick={handleSave}>
+              <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={handleSave}>
                 <Save className="mr-2 h-4 w-4" />
                 Speichern
               </Button>
-              <Button variant="destructive" onClick={handleReject}>
+              <Button variant="destructive" className="min-h-11 w-full sm:w-auto" onClick={handleReject}>
                 <X className="mr-2 h-4 w-4" />
                 Überspringen
               </Button>
-              <Button onClick={handleApprove}>
+              <Button className="min-h-11 w-full sm:w-auto" onClick={handleApprove}>
                 <Check className="mr-2 h-4 w-4" />
                 Freigeben
               </Button>

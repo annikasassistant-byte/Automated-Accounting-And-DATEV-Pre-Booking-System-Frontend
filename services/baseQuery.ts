@@ -2,13 +2,23 @@ import { fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import {
   API_V1,
-  clearTokens,
   getOrCreateDeviceId,
   getStoredAccessToken,
   getStoredRefreshToken,
   persistTokens,
 } from "@/services/config";
 import type { ApiSuccess, AuthTokensPayload } from "@/services/types";
+import { useAuthStore } from "@/lib/auth-store";
+
+function requestUrl(args: string | FetchArgs): string {
+  return typeof args === "string" ? args : args.url;
+}
+
+function isAuthSessionRequest(url: string): boolean {
+  return /\/auth\/(login|logout|logout-all|refresh|register|forgot-password|verify-otp|reset-password)/.test(
+    url
+  );
+}
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: API_V1,
@@ -31,7 +41,7 @@ export const baseQueryWithReauth: BaseQueryFn<
 > = async (args, api, extraOptions) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
+  if (result.error && result.error.status === 401 && !isAuthSessionRequest(requestUrl(args))) {
     const refreshToken = getStoredRefreshToken();
     const refreshResult = await rawBaseQuery(
       {
@@ -55,7 +65,7 @@ export const baseQueryWithReauth: BaseQueryFn<
       return result;
     }
 
-    clearTokens();
+    useAuthStore.getState().logout();
   }
 
   return result;

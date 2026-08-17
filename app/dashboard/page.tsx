@@ -21,24 +21,24 @@ import {
   useGetRulesQuery,
   useGetExportsQuery,
   useGetRuleSuggestionsQuery,
+  useGetReconciliationSummaryQuery,
 } from "@/services/accountingApi";
 
 export default function UserDashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const { data: txData, isLoading: txLoading } = useGetTransactionsQuery({ limit: 500 });
+  const { data: txData, isLoading: txLoading } = useGetTransactionsQuery({ limit: 1 });
+  const { data: recon, isLoading: reconLoading } = useGetReconciliationSummaryQuery();
   const { data: rules = [], isLoading: rulesLoading } = useGetRulesQuery();
   const { data: exports = [] } = useGetExportsQuery();
   const { data: patterns = [] } = useGetRuleSuggestionsQuery();
 
-  if (txLoading || rulesLoading) return <LoadingSkeleton variant="page" />;
+  if (txLoading || rulesLoading || reconLoading) return <LoadingSkeleton variant="page" />;
 
-  const transactions = txData?.items ?? [];
-  const openCount = transactions.filter((t) =>
-    ["imported", "suggested", "matched", "open", "new"].includes(t.status)
-  ).length;
-  const exportedCount = transactions.filter((t) => t.exportStatus === "exported").length;
+  const totalTx = txData?.meta?.total ?? 0;
+  const openCount = recon?.openCount ?? 0;
+  const exportedCount = recon?.byStatus?.exported?.count ?? 0;
   const pendingPatterns = patterns.filter((p) => p.status === "pending").length;
-  const volume = transactions.reduce((s, t) => s + Math.abs(t.amount), 0);
+  const volume = Math.abs(recon?.importedAmount ?? 0);
 
   const links = [
     { href: "/dashboard/import/bank", label: "Bank importieren", icon: Landmark },
@@ -64,7 +64,7 @@ export default function UserDashboardPage() {
           title="Umsatzvolumen"
           value={formatCurrencyPrecise(volume)}
           icon={Wallet}
-          subtitle={`${transactions.length} Transaktionen`}
+          subtitle={`${totalTx} Transaktionen`}
         />
         <MetricCard title="Aktive Regeln" value={String(rules.filter((r) => r.enabled).length)} icon={Scale} />
         <MetricCard

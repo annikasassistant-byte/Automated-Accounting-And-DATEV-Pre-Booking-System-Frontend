@@ -44,7 +44,7 @@ export function PageHeader({
               <p className="text-base leading-relaxed text-muted-foreground">{description}</p>
             )}
           </div>
-          {action && <div className="shrink-0">{action}</div>}
+          {action && <div className="w-full shrink-0 md:w-auto">{action}</div>}
         </div>
       </section>
     );
@@ -65,7 +65,11 @@ export function PageHeader({
           </p>
         )}
       </div>
-      {action}
+      {action && (
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end [&>a]:min-h-11 [&>button]:min-h-11">
+          {action}
+        </div>
+      )}
     </header>
   );
 }

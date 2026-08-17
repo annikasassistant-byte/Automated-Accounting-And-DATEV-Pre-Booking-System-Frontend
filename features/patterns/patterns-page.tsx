@@ -152,7 +152,7 @@ export function PatternsPage() {
               setStatusFilter((v as PatternAction | "all") ?? "all")
             }
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full min-w-0 sm:w-[180px]">
               <SelectValue>
                 {statusFilter === "all"
                   ? "Alle Status"
@@ -172,7 +172,7 @@ export function PatternsPage() {
             value={sortKey}
             onValueChange={(v) => setSortKey((v as SortKey) ?? "confidence")}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full min-w-0 sm:w-[180px]">
               <SelectValue>
                 <span className="inline-flex items-center gap-1.5">
                   <ArrowUpDown className="h-3.5 w-3.5" />

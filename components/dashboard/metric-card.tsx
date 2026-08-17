@@ -39,7 +39,7 @@ export function MetricCard({
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium tracking-wide text-muted-foreground">{title}</p>
-          <p className="mt-2 block text-[1.65rem] font-semibold leading-none tracking-tight tabular-financial text-foreground">
+          <p className="mt-2 block break-words text-[1.65rem] font-semibold leading-none tracking-tight tabular-financial text-foreground">
             {value}
           </p>
           {subtitle && (

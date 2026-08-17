@@ -40,7 +40,7 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
       // Still clear local session if API logout fails
     } finally {
       logout();
-      hardNavigate("/login");
+      hardNavigate("/login", { replace: true });
     }
   };
 
@@ -57,7 +57,7 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9 rounded-xl"
+          className="relative h-11 w-11 min-h-11 min-w-11 rounded-xl"
           onClick={() => setTheme(isDark ? "light" : "dark")}
           aria-label={isDark ? "Zum hellen Modus wechseln" : "Zum dunklen Modus wechseln"}
           suppressHydrationWarning
@@ -79,7 +79,7 @@ export function TopNavbar({ profileHref }: { profileHref: string }) {
           <DropdownMenuTrigger
             className={cn(
               buttonVariants({ variant: "ghost" }),
-              "relative h-9 w-9 rounded-full p-0"
+              "relative h-11 w-11 min-h-11 min-w-11 rounded-full p-0"
             )}
             aria-label="Kontomenü"
           >

@@ -114,12 +114,12 @@ export function DashboardShell({
     <SidebarProvider>
       {sidebar}
       <SidebarInset className="mesh-background min-h-screen">
-        <header className="sticky top-0 z-30 flex h-[3.75rem] items-center gap-3 border-b border-border/40 bg-background/70 px-4 backdrop-blur-xl lg:px-8">
+        <header className="sticky top-0 z-30 flex h-14 min-h-14 items-center gap-1 overflow-x-hidden border-b border-border/40 bg-background/70 px-2 backdrop-blur-xl sm:h-[3.75rem] sm:gap-3 sm:px-4 lg:px-8 xl:px-10">
           <SidebarTrigger className="-ml-1 rounded-xl" />
           {topbar}
         </header>
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-10">
-          <div className="mx-auto max-w-[1400px] space-y-8">{children}</div>
+        <main className="min-w-0 flex-1 overflow-x-hidden px-3 py-5 sm:px-4 sm:py-6 lg:px-8 lg:py-10 xl:px-10 2xl:px-12">
+          <div className="mx-auto w-full min-w-0 max-w-[1400px] space-y-8 2xl:max-w-[1680px]">{children}</div>
         </main>
       </SidebarInset>
     </SidebarProvider>

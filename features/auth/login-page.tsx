@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -55,7 +54,6 @@ function Field({
 }
 
 export function LoginPage() {
-  const searchParams = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
   const [login, { isLoading }] = useLoginMutation();
   const [mounted, setMounted] = useState(false);
@@ -63,6 +61,9 @@ export function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined" && window.location.search) {
+      window.history.replaceState({}, "", "/login");
+    }
   }, []);
 
   const {
@@ -86,17 +87,10 @@ export function LoginPage() {
       });
 
       const mapped = useAuthStore.getState().user;
-      const redirect = searchParams.get("redirect");
-      const target =
-        redirect && redirect.startsWith("/")
-          ? redirect
-          : mapped
-            ? getRedirectForRole(mapped.role)
-            : "/dashboard";
+      const target = mapped ? getRedirectForRole(mapped.role) : "/dashboard";
 
       setNavigating(true);
-      // Immediate hard navigation — no soft router transition / portal race.
-      hardNavigate(target);
+      hardNavigate(target, { replace: true });
     } catch (error) {
       setNavigating(false);
       toast.error(getApiErrorMessage(error, "Ungültige E-Mail oder Passwort"));

@@ -114,7 +114,7 @@ export function ReportsPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-2">
         <ChartCard title="Top-Konten nach Volumen" description="Absolute Kontensalden">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -124,7 +124,7 @@ export function ReportsPage() {
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
               <XAxis type="number" tick={{ fontSize: 12 }} />
-              <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
               <Tooltip formatter={(v) => formatCurrencyPrecise(Number(v))} />
               <Bar dataKey="amount" name="Betrag" fill="var(--chart-1)" radius={[0, 6, 6, 0]} />
             </BarChart>

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Automated Accounting | Auth Portal",
-  description: "Authentifizierung und Benutzerverwaltung für Automated Accounting.",
+  title: "Automated Accounting",
+  description: "DATEV-Vorbuchung: Bank, PayPal, Regeln und Export.",
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="flex min-h-full flex-col overflow-x-hidden" suppressHydrationWarning>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

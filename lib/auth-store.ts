@@ -3,7 +3,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { User, UserRole } from "@/types";
-import { clearTokens, persistTokens } from "@/services/config";
+import { persistTokens } from "@/services/config";
+import { clearClientSession } from "@/lib/clear-client-session";
 import { getRedirectForRole, mapServerUserToClient } from "@/services/auth-mappers";
 import type { ServerUser } from "@/services/types";
 
@@ -38,8 +39,13 @@ export const useAuthStore = create<AuthState>()(
       },
       setUser: (user) => set({ user, isAuthenticated: Boolean(user) }),
       logout: () => {
-        clearTokens();
+        clearClientSession();
         set({ user: null, isAuthenticated: false });
+        try {
+          useAuthStore.persist.clearStorage();
+        } catch {
+          /* ignore */
+        }
       },
       hasRole: (role) => get().user?.role === role,
     }),

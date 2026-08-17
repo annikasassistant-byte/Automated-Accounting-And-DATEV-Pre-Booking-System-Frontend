@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyPrecise, formatDate } from "@/lib/format";
+import { TableScroll } from "@/components/shared/table-scroll";
 import {
   useGetAccountLedgerQuery,
   useGetAccountsOverviewQuery,
@@ -104,7 +105,7 @@ export function AccountOverviewPage() {
                 type="date"
                 value={from}
                 onChange={(e) => setFrom(e.target.value)}
-                className="w-[160px]"
+                className="w-full sm:w-[160px]"
               />
             </div>
             <div className="space-y-1.5">
@@ -114,7 +115,7 @@ export function AccountOverviewPage() {
                 type="date"
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
-                className="w-[160px]"
+                className="w-full sm:w-[160px]"
               />
             </div>
             <label className="flex items-center gap-2 pb-2 text-sm">
@@ -144,7 +145,7 @@ export function AccountOverviewPage() {
           className="overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm"
           style={{ boxShadow: "var(--shadow-card)" }}
         >
-          <div className="max-h-[min(640px,70vh)] overflow-auto">
+          <TableScroll className="max-h-[min(640px,70vh)]">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-muted/90 backdrop-blur-md">
                 <TableRow className="border-border/40 hover:bg-transparent">
@@ -189,7 +190,7 @@ export function AccountOverviewPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </TableScroll>
         </div>
       )}
 
@@ -255,6 +256,7 @@ export function AccountOverviewPage() {
                 />
               ) : (
                 <div className="overflow-hidden rounded-xl border border-border/40">
+                  <TableScroll>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -303,10 +305,11 @@ export function AccountOverviewPage() {
                       ))}
                     </TableBody>
                   </Table>
+                  </TableScroll>
                 </div>
               )}
 
-              <Button variant="outline" onClick={() => setSelectedNumber(null)}>
+              <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={() => setSelectedNumber(null)}>
                 Schließen
               </Button>
             </div>

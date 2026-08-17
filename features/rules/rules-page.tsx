@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { SearchInput } from "@/components/shared/search-input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { TableScroll } from "@/components/shared/table-scroll";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -163,7 +164,7 @@ export function RulesPage() {
         />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/60">
-          <div className="max-h-[min(640px,70vh)] overflow-auto">
+          <TableScroll className="max-h-[min(640px,70vh)]">
             <Table>
               <TableHeader className="sticky top-0 z-10 bg-muted/90 backdrop-blur-md">
                 <TableRow className="hover:bg-transparent">
@@ -244,7 +245,7 @@ export function RulesPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </TableScroll>
         </div>
       )}
 

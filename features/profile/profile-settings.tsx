@@ -16,6 +16,7 @@ import {
   useUpdateProfileMutation,
 } from "@/services/authApi";
 import { getApiErrorMessage, mapServerUserToClient } from "@/services/auth-mappers";
+import { hardNavigate } from "@/lib/hard-navigate";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 
@@ -146,7 +147,7 @@ export function ProfileSettings() {
                 setNewPassword("");
                 toast.success("Passwort aktualisiert — bitte erneut anmelden");
                 useAuthStore.getState().logout();
-                window.location.href = "/login";
+                hardNavigate("/login", { replace: true });
               } catch (error) {
                 toast.error(getApiErrorMessage(error, "Passwort konnte nicht geändert werden"));
               }

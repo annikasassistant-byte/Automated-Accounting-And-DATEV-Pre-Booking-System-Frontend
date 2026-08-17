@@ -1,6 +1,8 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithReauth } from "@/services/baseQuery";
-import { clearTokens, getOrCreateDeviceId, getStoredRefreshToken } from "@/services/config";
+import { getOrCreateDeviceId, getStoredRefreshToken } from "@/services/config";
+import { accountingApi } from "@/services/accountingApi";
+import { clearClientSession } from "@/lib/clear-client-session";
 import type {
   ApiSuccess,
   AuthTokensPayload,
@@ -50,11 +52,15 @@ export const authApi = createApi({
         body: { refreshToken: getStoredRefreshToken() },
       }),
       transformResponse: (response: ApiSuccess<MessagePayload>) => response.data,
-      async onQueryStarted(_arg, { queryFulfilled }) {
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
+        } catch {
+          /* still wipe client session */
         } finally {
-          clearTokens();
+          dispatch(authApi.util.resetApiState());
+          dispatch(accountingApi.util.resetApiState());
+          clearClientSession();
         }
       },
     }),

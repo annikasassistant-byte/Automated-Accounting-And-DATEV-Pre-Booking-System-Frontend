@@ -38,8 +38,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       });
       socket.on("server:force_logout", () => {
         useAuthStore.getState().logout();
-        // Hard navigate — soft logout mid-tree often triggers removeChild.
-        window.location.assign("/login");
+        window.location.replace("/login");
       });
       socket.on("connect_error", () => {
         // Silent — realtime is best-effort

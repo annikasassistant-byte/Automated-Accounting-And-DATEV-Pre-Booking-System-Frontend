@@ -16,7 +16,7 @@ export function SearchInput({
   className?: string;
 }) {
   return (
-    <div className={cn("relative flex-1", className)}>
+    <div className={cn("relative min-w-0 w-full flex-1", className)}>
       <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={value}

@@ -110,12 +110,12 @@ export function SystemPoliciesPage() {
         description="Admin-konfigurierbare Buchungsrichtlinien (S1–S15). Änderungen gelten für neue Imports und Regel-Anwendung."
         action={
           isAdmin ? (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={reset} disabled={resetting}>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={reset} disabled={resetting}>
                 <RotateCcw className="size-4" />
                 Standard
               </Button>
-              <Button onClick={save} disabled={saving}>
+              <Button className="min-h-11 w-full sm:w-auto" onClick={save} disabled={saving}>
                 <Save className="size-4" />
                 Speichern
               </Button>
@@ -142,9 +142,9 @@ export function SystemPoliciesPage() {
           {ENABLE_LABELS.map((item) => (
             <div
               key={item.key}
-              className="flex items-start justify-between gap-3 rounded-lg border p-3"
+              className="flex min-w-0 items-start justify-between gap-3 rounded-lg border p-3"
             >
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-medium">{item.label}</div>
                 <div className="text-xs text-muted-foreground">{item.hint}</div>
               </div>

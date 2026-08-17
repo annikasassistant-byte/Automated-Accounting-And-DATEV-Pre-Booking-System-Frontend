@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { TableScroll } from "@/components/shared/table-scroll";
 import {
   Dialog,
   DialogContent,
@@ -223,7 +224,7 @@ export function AccountsPage() {
           className="max-w-md"
         />
         <Select value={typeFilter} onValueChange={(v) => v && setTypeFilter(v)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Typ" />
           </SelectTrigger>
           <SelectContent>
@@ -236,7 +237,7 @@ export function AccountsPage() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={(v) => v && setStatusFilter(v)}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -256,7 +257,8 @@ export function AccountsPage() {
         />
       ) : (
         <Card className="border-border/40">
-          <CardContent className="overflow-auto p-0">
+          <CardContent className="p-0">
+            <TableScroll>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -308,6 +310,7 @@ export function AccountsPage() {
                 ))}
               </TableBody>
             </Table>
+            </TableScroll>
           </CardContent>
         </Card>
       )}

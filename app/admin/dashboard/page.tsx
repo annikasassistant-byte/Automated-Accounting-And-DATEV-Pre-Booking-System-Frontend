@@ -13,15 +13,17 @@ import { formatCurrencyPrecise } from "@/lib/format";
 import {
   useGetTransactionsQuery,
   useGetRulesQuery,
+  useGetReconciliationSummaryQuery,
 } from "@/services/accountingApi";
 
 export default function AdminDashboardPage() {
   const user = useAuthStore((s) => s.user);
   const { data: usersData, isLoading: usersLoading } = useGetUsersQuery({ limit: 100 });
   const { data: txData, isLoading: txLoading } = useGetTransactionsQuery({ limit: 1 });
+  const { data: recon, isLoading: reconLoading } = useGetReconciliationSummaryQuery();
   const { data: rules = [], isLoading: rulesLoading } = useGetRulesQuery();
 
-  if (usersLoading || txLoading || rulesLoading) return <LoadingSkeleton variant="page" />;
+  if (usersLoading || txLoading || rulesLoading || reconLoading) return <LoadingSkeleton variant="page" />;
 
   const list = usersData?.data ?? [];
   const adminCount = list.filter((u) => {
@@ -29,8 +31,8 @@ export default function AdminDashboardPage() {
     return role === "admin";
   }).length;
   const userCount = list.length - adminCount;
-  const totalTx = txData?.meta?.total ?? txData?.items.length ?? 0;
-  const volume = txData?.items.reduce((s, t) => s + Math.abs(t.amount), 0) ?? 0;
+  const totalTx = txData?.meta?.total ?? 0;
+  const volume = Math.abs(recon?.importedAmount ?? 0);
 
   return (
     <div className="space-y-10">

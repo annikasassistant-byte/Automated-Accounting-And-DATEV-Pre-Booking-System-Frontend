@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatBookingPeriod, formatCurrencyPrecise } from "@/lib/format";
+import { TableScroll } from "@/components/shared/table-scroll";
 import {
   useGetReconciliationSummaryQuery,
   useGetImportsQuery,
@@ -91,17 +92,18 @@ export function ReconciliationPage() {
         <CardHeader>
           <CardTitle className="text-base">Buchungszeitraum</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="w-full space-y-1 sm:w-auto">
             <Label htmlFor="from">Von</Label>
             <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
-          <div className="space-y-1">
+          <div className="w-full space-y-1 sm:w-auto">
             <Label htmlFor="to">Bis</Label>
             <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <Button
             variant="outline"
+            className="min-h-11 w-full sm:w-auto"
             onClick={() => {
               setFrom(JULY.from);
               setTo(JULY.to);
@@ -109,7 +111,7 @@ export function ReconciliationPage() {
           >
             Juli 2026
           </Button>
-          <Button variant="outline" onClick={() => void refetch()}>
+          <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={() => void refetch()}>
             Aktualisieren
           </Button>
         </CardContent>
@@ -187,7 +189,7 @@ export function ReconciliationPage() {
             <CardTitle className="text-base">Status-Aufschlüsselung</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto rounded-lg border">
+            <TableScroll>
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
                   <tr>
@@ -210,7 +212,7 @@ export function ReconciliationPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableScroll>
           </CardContent>
         </Card>
       )}
