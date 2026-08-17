@@ -64,6 +64,47 @@ export function ruleFromServer(s: ServerRule): AccountingRule {
   };
 }
 
+const PAYPAL_TYPE_PREFIX =
+  /^(Handyzahlung|PayPal Express-Zahlung|Allgemeine Zahlung|Zahlung im Einzugsverfahren mit Zahlungsrechnung|Website-Zahlung|Allgemeine Gutschrift|Überweisung als Zahlungsquelle|Bankgutschrift auf PayPal-Konto|Bankgutschrift|Rückzahlung|Sammelzahlung)\s*[—\-–]\s*/i;
+
+function rawCsvField(raw: Record<string, string> | null | undefined, names: string[]): string {
+  if (!raw) return "";
+  const entries = Object.entries(raw).map(
+    ([key, value]) => [key.trim().toLowerCase(), String(value ?? "").trim()] as const,
+  );
+  for (const name of names) {
+    const hit = entries.find(([key]) => key === name.toLowerCase());
+    if (hit?.[1]) return hit[1];
+  }
+  return "";
+}
+
+/** Bank Verwendungszweck / PayPal Artikel or Betreff — never the PayPal type alone. */
+export function resolveVerwendungszweck(s: {
+  purpose?: string;
+  description?: string;
+  article?: string | null;
+  rawRow?: Record<string, string> | null;
+  paypal?: { type?: string | null };
+}): string {
+  const fromRaw = rawCsvField(s.rawRow, [
+    "verwendungszweck",
+    "artikelbezeichnung",
+    "betreff",
+    "hinweis",
+    "subject",
+    "note",
+  ]);
+  if (fromRaw) return fromRaw;
+  if (s.article?.trim()) return s.article.trim();
+  const combined = String(s.purpose || s.description || "").trim();
+  const stripped = combined.replace(PAYPAL_TYPE_PREFIX, "").trim();
+  const paypalType = (s.paypal?.type || "").trim();
+  if (stripped && stripped.toLowerCase() !== paypalType.toLowerCase()) return stripped;
+  if (combined && combined.toLowerCase() !== paypalType.toLowerCase()) return combined;
+  return stripped || combined;
+}
+
 function mapStatus(raw?: string): TransactionStatus {
   if (!raw) return "imported";
   const s = raw as TransactionStatus;
@@ -87,6 +128,7 @@ function mapStatus(raw?: string): TransactionStatus {
 export function transactionFromServer(s: ServerTransaction): Transaction {
   const amountCents = s.amountCents ?? 0;
   const amount = s.amount ?? amountCents / 100;
+  const purpose = resolveVerwendungszweck(s);
 
   return {
     id: s._id,
@@ -94,9 +136,12 @@ export function transactionFromServer(s: ServerTransaction): Transaction {
     transactionId: s.transactionId ?? s._id,
     source: s.source ?? "bank",
     counterparty: s.counterpartyName ?? s.counterparty ?? "",
-    purpose: s.purpose ?? s.description ?? "",
-    description: s.purpose ?? s.description ?? "",
+    purpose,
+    description: purpose,
     rawDescription: s.rawDescription,
+    article: s.article ?? null,
+    paypalType: s.paypal?.type ?? null,
+    rawRow: s.rawRow ?? null,
     reference: s.reference ?? s.bank?.customerRef ?? "",
     amount,
     currency: s.currency ?? "EUR",

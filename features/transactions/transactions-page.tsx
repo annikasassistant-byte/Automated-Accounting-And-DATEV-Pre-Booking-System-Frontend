@@ -254,7 +254,7 @@ export function TransactionsPage() {
             ? "Konfliktbehaftete Buchungen prüfen und auflösen."
             : statusFilter === "open"
               ? "Offene Buchungen manuell zuordnen oder Regeln anlegen."
-              : "Importierte Bewegungen prüfen, zuordnen und freigeben."
+              : "Buchbare Bewegungen prüfen, zuordnen und freigeben. PayPal-Einbehalte sind beim Import ausgeschlossen und erscheinen hier nicht."
         }
       />
 

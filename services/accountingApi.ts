@@ -179,6 +179,7 @@ export const accountingApi = createApi({
         search?: string;
         account?: string;
         importId?: string;
+        includeSkipped?: string;
         page?: number;
         limit?: number;
       } | void

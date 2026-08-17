@@ -170,9 +170,15 @@ export function TransactionDetailDrawer({
                   <div className="sm:col-span-2">
                     <dt className="text-muted-foreground">Verwendungszweck</dt>
                     <dd className="whitespace-pre-wrap break-words font-medium">
-                      {tx.purpose || tx.description || "—"}
+                      {tx.purpose || tx.article || "—"}
                     </dd>
                   </div>
+                  {(tx.paypalType || tx.paypal?.type) && (
+                    <div className="sm:col-span-2">
+                      <dt className="text-muted-foreground">PayPal-Typ</dt>
+                      <dd>{tx.paypalType || tx.paypal?.type}</dd>
+                    </div>
+                  )}
                   {tx.rawDescription &&
                     tx.rawDescription !== (tx.purpose || tx.description) && (
                       <div className="sm:col-span-2">

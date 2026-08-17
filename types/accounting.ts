@@ -130,6 +130,9 @@ export interface Transaction {
   purpose: string;
   description: string;
   rawDescription?: string;
+  article?: string | null;
+  paypalType?: string | null;
+  rawRow?: Record<string, string> | null;
   reference: string;
   amount: number;
   currency: string;
@@ -151,7 +154,7 @@ export interface Transaction {
   systemMatched?: boolean;
   systemRuleId?: string;
   history: TransactionHistoryEntry[];
-  paypal?: { transactionCode?: string };
+  paypal?: { transactionCode?: string; type?: string | null };
 }
 
 /** Server shape for transactions — mapped via transactionFromServer() */
@@ -167,6 +170,9 @@ export interface ServerTransaction {
   purpose?: string;
   description?: string;
   rawDescription?: string;
+  article?: string | null;
+  rawRow?: Record<string, string> | null;
+  paypal?: { transactionCode?: string; type?: string | null };
   bank?: { bookingText?: string | null; customerRef?: string | null };
   reference?: string;
   status?: string;
@@ -176,7 +182,6 @@ export interface ServerTransaction {
   confidence?: number;
   exportedInBatchId?: string | null;
   exportStatus?: ExportStatus;
-  paypal?: { transactionCode?: string };
   fingerprint?: string;
   importBatchId?: string;
   history?: Array<{ id?: string; at?: string; action?: string; actor?: string; actorLabel?: string; detail?: string; note?: string }>;
