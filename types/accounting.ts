@@ -131,6 +131,8 @@ export interface Transaction {
   description: string;
   rawDescription?: string;
   article?: string | null;
+  paypalSubject?: string | null;
+  paypalNote?: string | null;
   paypalType?: string | null;
   rawRow?: Record<string, string> | null;
   reference: string;
@@ -154,7 +156,12 @@ export interface Transaction {
   systemMatched?: boolean;
   systemRuleId?: string;
   history: TransactionHistoryEntry[];
-  paypal?: { transactionCode?: string; type?: string | null };
+  paypal?: {
+    transactionCode?: string;
+    type?: string | null;
+    subject?: string | null;
+    note?: string | null;
+  };
 }
 
 /** Server shape for transactions — mapped via transactionFromServer() */
@@ -172,7 +179,12 @@ export interface ServerTransaction {
   rawDescription?: string;
   article?: string | null;
   rawRow?: Record<string, string> | null;
-  paypal?: { transactionCode?: string; type?: string | null };
+  paypal?: {
+    transactionCode?: string;
+    type?: string | null;
+    subject?: string | null;
+    note?: string | null;
+  };
   bank?: { bookingText?: string | null; customerRef?: string | null };
   reference?: string;
   status?: string;
@@ -428,6 +440,38 @@ export interface AccountTotalReport {
   accountName?: string;
   total: number;
   count: number;
+}
+
+/** Kontenübersicht trial-balance row (double-entry). */
+export interface AccountOverviewRow {
+  accountNumber: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  count: number;
+  lastBookingDate?: string | null;
+}
+
+export interface AccountLedgerLine {
+  transactionId: string;
+  bookingDate: string;
+  paymentDate: string;
+  amountCents: number;
+  side: "S" | "H";
+  contraAccount: string;
+  purpose: string;
+  source: TransactionSource;
+  status: string;
+}
+
+export interface AccountLedgerResult {
+  accountNumber: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  lines: AccountLedgerLine[];
 }
 
 export interface StatusBreakdownReport {

@@ -167,16 +167,53 @@ export function TransactionDetailDrawer({
                     <dt className="text-muted-foreground">Gegenpartei</dt>
                     <dd className="font-medium">{tx.counterparty}</dd>
                   </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-muted-foreground">Verwendungszweck</dt>
-                    <dd className="whitespace-pre-wrap break-words font-medium">
-                      {tx.purpose || tx.article || "—"}
-                    </dd>
-                  </div>
-                  {(tx.paypalType || tx.paypal?.type) && (
+                  {tx.source === "paypal" ? (
+                    <>
+                      {tx.article ? (
+                        <div className="sm:col-span-2">
+                          <dt className="text-muted-foreground">Artikelbezeichnung</dt>
+                          <dd className="whitespace-pre-wrap break-words font-medium">
+                            {tx.article}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {tx.paypalSubject ? (
+                        <div className="sm:col-span-2">
+                          <dt className="text-muted-foreground">Betreff</dt>
+                          <dd className="whitespace-pre-wrap break-words font-medium">
+                            {tx.paypalSubject}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {tx.paypalNote ? (
+                        <div className="sm:col-span-2">
+                          <dt className="text-muted-foreground">Hinweis</dt>
+                          <dd className="whitespace-pre-wrap break-words font-medium">
+                            {tx.paypalNote}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {!tx.article && !tx.paypalSubject && !tx.paypalNote ? (
+                        <div className="sm:col-span-2">
+                          <dt className="text-muted-foreground">Verwendungszweck</dt>
+                          <dd className="whitespace-pre-wrap break-words font-medium">
+                            {tx.purpose || "—"}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {(tx.paypalType || tx.paypal?.type) && (
+                        <div className="sm:col-span-2">
+                          <dt className="text-muted-foreground">PayPal-Typ</dt>
+                          <dd>{tx.paypalType || tx.paypal?.type}</dd>
+                        </div>
+                      )}
+                    </>
+                  ) : (
                     <div className="sm:col-span-2">
-                      <dt className="text-muted-foreground">PayPal-Typ</dt>
-                      <dd>{tx.paypalType || tx.paypal?.type}</dd>
+                      <dt className="text-muted-foreground">Verwendungszweck</dt>
+                      <dd className="whitespace-pre-wrap break-words font-medium">
+                        {tx.purpose || tx.article || "—"}
+                      </dd>
                     </div>
                   )}
                   {tx.rawDescription &&

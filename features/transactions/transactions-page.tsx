@@ -109,10 +109,47 @@ export function TransactionsPage() {
       },
       {
         id: "purpose",
-        accessorFn: (row) => row.purpose || row.description,
+        accessorFn: (row) =>
+          [
+            row.purpose,
+            row.description,
+            row.article,
+            row.paypalSubject,
+            row.paypalNote,
+          ]
+            .filter(Boolean)
+            .join(" "),
         header: "Verwendungszweck",
         cell: ({ row }) => {
-          const text = row.original.purpose || row.original.description || "—";
+          const tx = row.original;
+          if (tx.source === "paypal") {
+            const parts = [
+              tx.article ? { label: "Artikel", value: tx.article } : null,
+              tx.paypalSubject ? { label: "Betreff", value: tx.paypalSubject } : null,
+              tx.paypalNote ? { label: "Hinweis", value: tx.paypalNote } : null,
+            ].filter(Boolean) as { label: string; value: string }[];
+            if (!parts.length) {
+              const fallback = tx.purpose || tx.description || "—";
+              return (
+                <span className="block min-w-[220px] max-w-[320px] whitespace-normal break-words text-sm">
+                  {fallback}
+                </span>
+              );
+            }
+            return (
+              <div className="min-w-[220px] max-w-[320px] space-y-1 text-sm">
+                {parts.map((p) => (
+                  <p key={p.label} className="whitespace-normal break-words" title={p.value}>
+                    <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {p.label}
+                    </span>
+                    {p.value}
+                  </p>
+                ))}
+              </div>
+            );
+          }
+          const text = tx.purpose || tx.description || "—";
           return (
             <span
               title={text === "—" ? undefined : text}
@@ -215,6 +252,9 @@ export function TransactionsPage() {
         t.counterparty,
         t.purpose,
         t.description,
+        t.article,
+        t.paypalSubject,
+        t.paypalNote,
         t.rawDescription,
         t.reference,
         t.status,

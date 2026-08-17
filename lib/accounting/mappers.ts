@@ -79,7 +79,37 @@ function rawCsvField(raw: Record<string, string> | null | undefined, names: stri
   return "";
 }
 
-/** Bank Verwendungszweck / PayPal Artikel or Betreff — never the PayPal type alone. */
+/** PayPal column P — Artikelbezeichnung. Never first-wins over Hinweis. */
+export function resolvePaypalArticle(s: {
+  article?: string | null;
+  rawRow?: Record<string, string> | null;
+}): string {
+  const fromServer = String(s.article ?? "").trim();
+  if (fromServer) return fromServer;
+  return rawCsvField(s.rawRow, ["artikelbezeichnung", "article title"]);
+}
+
+/** PayPal column AL — Betreff. */
+export function resolvePaypalSubject(s: {
+  paypal?: { subject?: string | null };
+  rawRow?: Record<string, string> | null;
+}): string {
+  const fromServer = String(s.paypal?.subject ?? "").trim();
+  if (fromServer) return fromServer;
+  return rawCsvField(s.rawRow, ["betreff", "subject"]);
+}
+
+/** PayPal column AM — Hinweis. */
+export function resolvePaypalNote(s: {
+  paypal?: { note?: string | null };
+  rawRow?: Record<string, string> | null;
+}): string {
+  const fromServer = String(s.paypal?.note ?? "").trim();
+  if (fromServer) return fromServer;
+  return rawCsvField(s.rawRow, ["hinweis", "note", "notiz"]);
+}
+
+/** Bank Verwendungszweck — never the PayPal type alone. Does not hide Hinweis. */
 export function resolveVerwendungszweck(s: {
   purpose?: string;
   description?: string;
@@ -87,15 +117,8 @@ export function resolveVerwendungszweck(s: {
   rawRow?: Record<string, string> | null;
   paypal?: { type?: string | null };
 }): string {
-  const fromRaw = rawCsvField(s.rawRow, [
-    "verwendungszweck",
-    "artikelbezeichnung",
-    "betreff",
-    "hinweis",
-    "subject",
-    "note",
-  ]);
-  if (fromRaw) return fromRaw;
+  const bankPurpose = rawCsvField(s.rawRow, ["verwendungszweck"]);
+  if (bankPurpose) return bankPurpose;
   if (s.article?.trim()) return s.article.trim();
   const combined = String(s.purpose || s.description || "").trim();
   const stripped = combined.replace(PAYPAL_TYPE_PREFIX, "").trim();
@@ -128,6 +151,9 @@ function mapStatus(raw?: string): TransactionStatus {
 export function transactionFromServer(s: ServerTransaction): Transaction {
   const amountCents = s.amountCents ?? 0;
   const amount = s.amount ?? amountCents / 100;
+  const paypalArticle = resolvePaypalArticle(s);
+  const paypalSubject = resolvePaypalSubject(s);
+  const paypalNote = resolvePaypalNote(s);
   const purpose = resolveVerwendungszweck(s);
 
   return {
@@ -139,7 +165,9 @@ export function transactionFromServer(s: ServerTransaction): Transaction {
     purpose,
     description: purpose,
     rawDescription: s.rawDescription,
-    article: s.article ?? null,
+    article: paypalArticle || s.article || null,
+    paypalSubject: paypalSubject || null,
+    paypalNote: paypalNote || null,
     paypalType: s.paypal?.type ?? null,
     rawRow: s.rawRow ?? null,
     reference: s.reference ?? s.bank?.customerRef ?? "",
@@ -169,7 +197,12 @@ export function transactionFromServer(s: ServerTransaction): Transaction {
       actor: h.actorLabel ?? h.actor ?? "",
       detail: h.note ?? h.detail,
     })),
-    paypal: s.paypal,
+    paypal: {
+      transactionCode: s.paypal?.transactionCode,
+      type: s.paypal?.type ?? null,
+      subject: paypalSubject || s.paypal?.subject || null,
+      note: paypalNote || s.paypal?.note || null,
+    },
   };
 }
 

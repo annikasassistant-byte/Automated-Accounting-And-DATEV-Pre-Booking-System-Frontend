@@ -4,6 +4,8 @@ import type { ApiSuccess } from "@/services/types";
 import type {
   Account,
   AccountingRule,
+  AccountLedgerResult,
+  AccountOverviewRow,
   AccountTotalReport,
   CompanySettings,
   DatevExportJob,
@@ -51,6 +53,7 @@ export const accountingApi = createApi({
     "Settings",
     "Reports",
     "Reconciliation",
+    "Ledger",
   ],
   endpoints: (builder) => ({
     // ──────────── Accounts ────────────
@@ -62,12 +65,32 @@ export const accountingApi = createApi({
     }),
 
     getAccountsOverview: builder.query<
-      { totalAccounts: number; byType: Record<string, number> },
-      void
+      AccountOverviewRow[],
+      { from?: string; to?: string; includeEmpty?: boolean } | void
     >({
-      query: () => "/accounts/overview",
-      transformResponse: (r: ApiSuccess) => r.data as never,
-      providesTags: ["Accounts"],
+      query: (args) => ({
+        url: "/accounts/overview",
+        params: {
+          from: args?.from,
+          to: args?.to,
+          includeEmpty: args?.includeEmpty ? "true" : "false",
+        },
+      }),
+      transformResponse: (r: ApiSuccess<{ accounts?: AccountOverviewRow[] }>) =>
+        r.data?.accounts ?? [],
+      providesTags: ["Accounts", "Ledger"],
+    }),
+
+    getAccountLedger: builder.query<
+      AccountLedgerResult,
+      { number: string; from?: string; to?: string }
+    >({
+      query: ({ number, from, to }) => ({
+        url: `/accounts/${encodeURIComponent(number)}/ledger`,
+        params: { from, to },
+      }),
+      transformResponse: (r: ApiSuccess<AccountLedgerResult>) => r.data,
+      providesTags: (_r, _e, arg) => [{ type: "Ledger", id: arg.number }],
     }),
 
     createAccount: builder.mutation<Account, Partial<ServerAccount>>({
@@ -117,7 +140,7 @@ export const accountingApi = createApi({
           message: payload?.message,
         } as ImportBatch;
       },
-      invalidatesTags: ["Imports", "Transactions"],
+      invalidatesTags: ["Imports", "Transactions", "Ledger"],
     }),
 
     importPaypal: builder.mutation<ImportBatch, FormData>({
@@ -133,7 +156,7 @@ export const accountingApi = createApi({
           message: payload?.message,
         } as ImportBatch;
       },
-      invalidatesTags: ["Imports", "Transactions"],
+      invalidatesTags: ["Imports", "Transactions", "Ledger"],
     }),
 
     getImports: builder.query<ImportBatch[], { source?: string; limit?: number; page?: number } | void>({
@@ -165,7 +188,7 @@ export const accountingApi = createApi({
           openCount: number;
           conflictCount: number;
         },
-      invalidatesTags: ["Imports", "Transactions", "Reconciliation", "Duplicates"],
+      invalidatesTags: ["Imports", "Transactions", "Reconciliation", "Duplicates", "Ledger"],
     }),
 
     // ──────────── Transactions ────────────
@@ -215,7 +238,7 @@ export const accountingApi = createApi({
     applyRules: builder.mutation<{ applied: number }, void>({
       query: () => ({ url: "/transactions/apply-rules", method: "POST" }),
       transformResponse: (r: ApiSuccess) => r.data as { applied: number },
-      invalidatesTags: ["Transactions"],
+      invalidatesTags: ["Transactions", "Ledger"],
     }),
 
     assignTransaction: builder.mutation<
@@ -236,7 +259,7 @@ export const accountingApi = createApi({
         body,
       }),
       transformResponse: (r: ApiSuccess<ServerTransaction>) => transactionFromServer(r.data),
-      invalidatesTags: ["Transactions"],
+      invalidatesTags: ["Transactions", "Ledger"],
     }),
 
     bulkAssignTransactions: builder.mutation<
@@ -250,7 +273,7 @@ export const accountingApi = createApi({
       }
     >({
       query: (body) => ({ url: "/transactions/bulk-assign", method: "POST", body }),
-      invalidatesTags: ["Transactions"],
+      invalidatesTags: ["Transactions", "Ledger"],
     }),
 
     updateTransactionStatus: builder.mutation<
@@ -263,12 +286,12 @@ export const accountingApi = createApi({
         body,
       }),
       transformResponse: (r: ApiSuccess<ServerTransaction>) => transactionFromServer(r.data),
-      invalidatesTags: ["Transactions"],
+      invalidatesTags: ["Transactions", "Ledger"],
     }),
 
     bulkUpdateStatus: builder.mutation<void, { ids: string[]; status: string }>({
       query: (body) => ({ url: "/transactions/bulk-status", method: "POST", body }),
-      invalidatesTags: ["Transactions"],
+      invalidatesTags: ["Transactions", "Ledger"],
     }),
 
     // ──────────── Rules ────────────
@@ -295,7 +318,7 @@ export const accountingApi = createApi({
         body: body || {},
       }),
       transformResponse: (r: ApiSuccess<ServerRule>) => ruleFromServer(r.data),
-      invalidatesTags: ["Rules", "Transactions"],
+      invalidatesTags: ["Rules", "Transactions", "Ledger"],
     }),
 
     getRule: builder.query<AccountingRule, string>({
@@ -395,7 +418,7 @@ export const accountingApi = createApi({
     createExport: builder.mutation<DatevExportJob, { from: string; to: string; periodType?: string }>({
       query: (body) => ({ url: "/exports/datev", method: "POST", body }),
       transformResponse: (r: ApiSuccess<ServerExportJob>) => exportJobFromServer(r.data),
-      invalidatesTags: ["Exports", "Transactions"],
+      invalidatesTags: ["Exports", "Transactions", "Ledger"],
     }),
 
     getExports: builder.query<DatevExportJob[], void>({
@@ -459,7 +482,7 @@ export const accountingApi = createApi({
         method: "POST",
         body: { action },
       }),
-      invalidatesTags: ["Duplicates", "Transactions"],
+      invalidatesTags: ["Duplicates", "Transactions", "Ledger"],
     }),
 
     // ──────────── Settings ────────────
@@ -549,6 +572,7 @@ export const {
   // Accounts
   useGetAccountsQuery,
   useGetAccountsOverviewQuery,
+  useGetAccountLedgerQuery,
   useCreateAccountMutation,
   useUpdateAccountMutation,
   useSeedAccountsMutation,
