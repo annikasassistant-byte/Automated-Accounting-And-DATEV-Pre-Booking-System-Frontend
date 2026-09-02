@@ -1,0 +1,141 @@
+﻿name: Deploy Frontend Production
+
+on:
+  push:
+    branches:
+      - production
+
+concurrency:
+  group: frontend-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Frontend to Production
+    runs-on: ubuntu-latest
+
+    environment:
+      name: production
+
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Install pnpm BEFORE setup-node cache: pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: Verify Node and pnpm
+        run: |
+          echo "Node:"
+          node --version
+
+          echo "npm:"
+          npm --version
+
+          echo "pnpm:"
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Vercel configuration
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "ERROR: VERCEL_TOKEN is not configured"
+            exit 1
+          fi
+
+          if [ -z "$VERCEL_ORG_ID" ]; then
+            echo "ERROR: VERCEL_ORG_ID is not configured"
+            exit 1
+          fi
+
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "ERROR: VERCEL_PROJECT_ID is not configured"
+            exit 1
+          fi
+
+          if [ -z "$NEXT_PUBLIC_API_URL" ]; then
+            echo "WARNING: NEXT_PUBLIC_API_URL is not configured"
+          fi
+
+          echo "Vercel configuration is present."
+
+      - name: Remove local Vercel configuration
+        run: |
+          rm -rf .vercel
+          echo "Removed local .vercel configuration."
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@59.1.3
+
+      - name: Pull Vercel production environment
+        run: |
+          vercel pull \
+            --yes \
+            --environment=production \
+            --token="$VERCEL_TOKEN"
+
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          vercel build \
+            --prod \
+            --token="$VERCEL_TOKEN"
+
+      - name: Deploy frontend to Vercel
+        run: |
+          vercel deploy \
+            --prebuilt \
+            --prod \
+            --token="$VERCEL_TOKEN"
+
+      - name: Wait for frontend
+        run: |
+          FRONTEND_URL="https://automated-accounting-and-datev-pre.vercel.app"
+
+          echo "Waiting for production frontend to become healthy..."
+
+          for i in {1..30}; do
+            echo "Health check attempt $i/30..."
+
+            if curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --max-time 10 \
+              "$FRONTEND_URL"; then
+
+              echo ""
+              echo "Frontend is healthy!"
+              exit 0
+            fi
+
+            echo "Frontend is not ready yet. Waiting 10 seconds..."
+            sleep 10
+          done
+
+          echo "Frontend health check failed after 5 minutes."
+          exit 1
+
+      - name: Deployment successful
+        run: |
+          echo "Frontend production deployment completed successfully."
