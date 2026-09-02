@@ -2,6 +2,13 @@ import { cn } from "@/lib/utils";
 import { Layers } from "lucide-react";
 import Link from "next/link";
 
+
+
+
+
+
+
+
 const steps = [
   { id: 1, label: "E-Mail" },
   { id: 2, label: "OTP prüfen" },
