@@ -36,8 +36,25 @@ import {
   transactionFromServer,
 } from "@/lib/accounting/mappers";
 import { downloadAuthenticatedFile } from "@/lib/download";
+import type {
+  AccrualImportResult,
+  AccrualInbox,
+  AccrualMarketplace,
+  AccountingException,
+  BusinessEvent,
+  ClearingConfig,
+  JournalEntry,
+  JournalLine,
+} from "@/types/accrual";
 
 type Paginated<T> = { items: T[]; meta?: { page?: number; limit?: number; total?: number } };
+
+function paginatedFromApi<T>(r: ApiSuccess<T[]>): Paginated<T> {
+  return {
+    items: r.data ?? [],
+    meta: r.meta as Paginated<T>["meta"],
+  };
+}
 
 export const accountingApi = createApi({
   reducerPath: "accountingApi",
@@ -54,6 +71,7 @@ export const accountingApi = createApi({
     "Reports",
     "Reconciliation",
     "Ledger",
+    "Accrual",
   ],
   endpoints: (builder) => ({
     // ──────────── Accounts ────────────
@@ -565,6 +583,120 @@ export const accountingApi = createApi({
       },
       providesTags: ["Reports"],
     }),
+
+    // ──────────── Accrual ────────────
+    importJtl: builder.mutation<AccrualImportResult, FormData>({
+      query: (body) => ({ url: "/imports/jtl", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<AccrualImportResult>) => r.data,
+      invalidatesTags: ["Accrual", "Imports"],
+    }),
+
+    importMarketplace: builder.mutation<
+      AccrualImportResult,
+      { channel: AccrualMarketplace; body: FormData }
+    >({
+      query: ({ channel, body }) => ({
+        url: `/imports/marketplace/${channel}`,
+        method: "POST",
+        body,
+      }),
+      transformResponse: (r: ApiSuccess<AccrualImportResult>) => r.data,
+      invalidatesTags: ["Accrual", "Imports"],
+    }),
+
+    getAccrualInbox: builder.query<AccrualInbox, void>({
+      query: () => "/accrual/inbox",
+      transformResponse: (r: ApiSuccess<AccrualInbox>) => r.data,
+      providesTags: ["Accrual"],
+    }),
+
+    getAccrualEvents: builder.query<Paginated<BusinessEvent>, Record<string, string | number | undefined>>({
+      query: (params) => ({ url: "/accrual/events", params }),
+      transformResponse: (r: ApiSuccess<BusinessEvent[]>) => paginatedFromApi(r),
+      providesTags: ["Accrual"],
+    }),
+
+    getAccrualExceptions: builder.query<
+      Paginated<AccountingException>,
+      Record<string, string | number | undefined>
+    >({
+      query: (params) => ({ url: "/accrual/exceptions", params }),
+      transformResponse: (r: ApiSuccess<AccountingException[]>) => paginatedFromApi(r),
+      providesTags: ["Accrual"],
+    }),
+
+    resolveAccrualException: builder.mutation<
+      AccountingException,
+      { id: string; status?: string; resolutionNote?: string }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/accrual/exceptions/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      transformResponse: (r: ApiSuccess<AccountingException>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    getClearingConfig: builder.query<ClearingConfig, void>({
+      query: () => "/accrual/clearing",
+      transformResponse: (r: ApiSuccess<ClearingConfig>) => r.data,
+      providesTags: [{ type: "Accrual", id: "clearing" }],
+    }),
+
+    updateClearingConfig: builder.mutation<ClearingConfig, Partial<ClearingConfig>>({
+      query: (body) => ({ url: "/accrual/clearing", method: "PATCH", body }),
+      transformResponse: (r: ApiSuccess<ClearingConfig>) => r.data,
+      invalidatesTags: [{ type: "Accrual", id: "clearing" }],
+    }),
+
+    getAccrualJournal: builder.query<Paginated<JournalEntry>, Record<string, string | undefined>>({
+      query: (params) => ({ url: "/accrual/journal", params }),
+      transformResponse: (r: ApiSuccess<JournalEntry[]>) => paginatedFromApi(r),
+      providesTags: ["Accrual"],
+    }),
+
+    buildJournalDraft: builder.mutation<
+      { entry: JournalEntry; lines: JournalLine[] },
+      { eventId: string }
+    >({
+      query: ({ eventId }) => ({
+        url: `/accrual/journal/build/${eventId}`,
+        method: "POST",
+      }),
+      transformResponse: (r: ApiSuccess<{ entry: JournalEntry; lines: JournalLine[] }>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    postAccrualJournal: builder.mutation<
+      { entry: JournalEntry; lines: JournalLine[] },
+      { id: string }
+    >({
+      query: ({ id }) => ({ url: `/accrual/journal/${id}/post`, method: "POST" }),
+      transformResponse: (r: ApiSuccess<{ entry: JournalEntry; lines: JournalLine[] }>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    getMarketplacePayoutReconciliation: builder.query<
+      Paginated<{ payout: BusinessEvent; reconStatus: string; candidateTransactions: unknown[] }>,
+      Record<string, string | undefined>
+    >({
+      query: (params) => ({ url: "/reconciliation/marketplace", params }),
+      transformResponse: (r: ApiSuccess<any[]>) => paginatedFromApi(r),
+      providesTags: ["Accrual", "Reconciliation"],
+    }),
+
+    matchMarketplacePayout: builder.mutation<
+      unknown,
+      { payoutEventId: string; transactionId: string }
+    >({
+      query: (body) => ({
+        url: "/reconciliation/marketplace/match",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Accrual", "Reconciliation"],
+    }),
   }),
 });
 
@@ -633,4 +765,18 @@ export const {
   // Reports
   useGetAccountTotalsQuery,
   useGetStatusBreakdownQuery,
+  // Accrual
+  useImportJtlMutation,
+  useImportMarketplaceMutation,
+  useGetAccrualInboxQuery,
+  useGetAccrualEventsQuery,
+  useGetAccrualExceptionsQuery,
+  useResolveAccrualExceptionMutation,
+  useGetClearingConfigQuery,
+  useUpdateClearingConfigMutation,
+  useGetAccrualJournalQuery,
+  useBuildJournalDraftMutation,
+  usePostAccrualJournalMutation,
+  useGetMarketplacePayoutReconciliationQuery,
+  useMatchMarketplacePayoutMutation,
 } = accountingApi;

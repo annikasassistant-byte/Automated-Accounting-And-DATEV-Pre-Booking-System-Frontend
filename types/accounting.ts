@@ -2,6 +2,14 @@
 
 export type TransactionSource = "bank" | "paypal";
 
+/** Import batch sources including accrual paths */
+export type ImportBatchSource =
+  | TransactionSource
+  | "jtl"
+  | "marketplace_amazon"
+  | "marketplace_backmarket"
+  | "marketplace_refurbed";
+
 export type TransactionStatus =
   | "imported"
   | "suggested"
@@ -219,7 +227,7 @@ export interface TransactionHistoryEntry {
 
 export interface ImportBatch {
   id: string;
-  source: TransactionSource;
+  source: ImportBatchSource;
   fileName: string;
   fileHash: string;
   importedAt: string;

@@ -19,6 +19,11 @@ import {
   ListTodo,
   AlertTriangle,
   Shield,
+  Package,
+  Store,
+  Inbox,
+  BookMarked,
+  Coins,
 } from "lucide-react";
 
 export interface NavItem {
@@ -35,6 +40,14 @@ export interface NavGroup {
 const accountingItems = (prefix: "/admin" | "/dashboard"): NavItem[] => [
   { title: "Bank-Import", href: `${prefix}/import/bank`, icon: Landmark },
   { title: "PayPal-Import", href: `${prefix}/import/paypal`, icon: Wallet },
+  { title: "JTL-Import", href: `${prefix}/import/jtl`, icon: Package },
+  { title: "Amazon-Import", href: `${prefix}/import/marketplace/amazon`, icon: Store },
+  { title: "Back Market-Import", href: `${prefix}/import/marketplace/backmarket`, icon: Store },
+  { title: "Refurbed-Import", href: `${prefix}/import/marketplace/refurbed`, icon: Store },
+  { title: "Buchhaltungs-Posteingang", href: `${prefix}/accounting-inbox`, icon: Inbox },
+  { title: "Geschäftsvorfälle", href: `${prefix}/accrual/events`, icon: BookMarked },
+  { title: "Accrual-Journal", href: `${prefix}/accrual/journal`, icon: Coins },
+  { title: "Marktplatz-Auszahlungen", href: `${prefix}/reconciliation/marketplace`, icon: GitCompare },
   { title: "Transaktionen", href: `${prefix}/transactions`, icon: ArrowLeftRight },
   { title: "Offene Posten", href: `${prefix}/transactions?status=open`, icon: ListTodo },
   { title: "Konflikte", href: `${prefix}/transactions?status=conflict`, icon: AlertTriangle },
@@ -64,6 +77,7 @@ export const adminNavGroups: NavGroup[] = [
     label: "System",
     items: [
       { title: "Unternehmen", href: "/admin/settings/company", icon: Building2 },
+      { title: "Marktplatz-Clearing", href: "/admin/settings/clearing", icon: Store },
       { title: "Systemrichtlinien", href: "/admin/settings/system-policies", icon: Shield },
       { title: "Einstellungen", href: "/admin/settings", icon: Settings },
       { title: "Profil", href: "/admin/profile", icon: User },

@@ -1,6 +1,6 @@
 # Automated Accounting — Frontend
 
-Next.js German accounting portal wired to the Automated Accounting API (Mongo-backed).
+Next.js German accounting portal wired to the Automated Accounting API (Mongo-backed). Supports the **cash DATEV MVP** and the parallel **accrual** path (JTL + marketplace imports, inbox, journal).
 
 ## Stack
 
@@ -27,7 +27,8 @@ Open [http://localhost:3000](http://localhost:3000) (or the port Next prints).
 ## Routes
 
 - **Auth:** `/login`, `/forgot-password`, `/verify-otp`, `/reset-password`, `/unauthorized`
-- **Accounting** (mirrored under `/dashboard/*` and `/admin/*`): import bank/paypal, transactions, open items, patterns, rules, accounts, DATEV export, duplicates, reconciliation, reports, company settings
-- **Admin only:** `/admin/users`, plus write actions on rules/accounts/company settings
+- **Accounting (cash):** import bank/paypal, transactions, open items, patterns, rules, accounts, DATEV export, duplicates, reconciliation, reports, company settings
+- **Accrual:** JTL + marketplace imports, accounting inbox, business events, accrual journal, marketplace payout reconciliation
+- **Admin only:** `/admin/users`, `/admin/settings/clearing`, plus write actions on rules/accounts/company settings and accrual journal posting
 
 Accounting domain data is loaded via **`accountingApi` → `/api/v1`** (not localStorage mocks).

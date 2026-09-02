@@ -4,6 +4,7 @@ import type {
   DatevExportJob,
   DuplicateItem,
   ImportBatch,
+  ImportBatchSource,
   MatchMode,
   PatternGroup,
   ServerAccount,
@@ -210,7 +211,7 @@ export function importBatchFromServer(s: ServerImportBatch): ImportBatch {
   const errs = s.importErrors ?? s.errors ?? [];
   return {
     id: s._id,
-    source: s.source ?? "bank",
+    source: (s.source ?? "bank") as ImportBatchSource,
     fileName: s.fileName ?? s.filename ?? "",
     fileHash: s.fileHash ?? "",
     importedAt: s.importedAt ?? s.createdAt ?? "",
