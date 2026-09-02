@@ -4,10 +4,6 @@ import "./globals.css";
 import { AppProviders } from "@/providers/app-providers";
 // next logs
 
-
-
-
-
 // next fonts
 const geistSans = Geist({
   variable: "--font-geist-sans",
