@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:smoke": "node scripts/smoke-routes.mjs"
+    "test:smoke": "node scripts/smoke-routes.mjs",
+    "promote:staging": "node ../deployment/scripts/git-promote.mjs staging",
+    "promote:production": "node ../deployment/scripts/git-promote.mjs production",
+    "setup:production-hook": "node ../deployment/scripts/install-production-checkout-hook.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

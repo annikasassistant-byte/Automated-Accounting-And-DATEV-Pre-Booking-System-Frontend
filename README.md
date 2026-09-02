@@ -2,6 +2,8 @@
 
 Next.js German accounting portal wired to the Automated Accounting API (Mongo-backed). Supports the **cash DATEV MVP** and the parallel **accrual** path (JTL + marketplace imports, inbox, journal).
 
+> **`production` branch:** [PRODUCTION.md](./PRODUCTION.md) (git promote steps + [package.json](./package.json) · [server/package.json](../server/package.json))
+
 ## Stack
 
 Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, RTK Query (`authApi` + `accountingApi`), Socket.IO client.
