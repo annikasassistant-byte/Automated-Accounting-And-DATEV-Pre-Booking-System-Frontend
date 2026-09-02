@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { AccrualQueryState } from "@/components/shared/accrual-query-state";
 import { toast } from "sonner";
 import {
   useGetClearingConfigQuery,
@@ -16,12 +16,22 @@ import type { AccrualMarketplace } from "@/types/accrual";
 const MARKETPLACES: AccrualMarketplace[] = ["amazon", "backmarket", "refurbed"];
 
 export function ClearingSettingsPage() {
-  const { data, isLoading } = useGetClearingConfigQuery();
+  const { data, isLoading, isError } = useGetClearingConfigQuery();
   const [update, { isLoading: saving }] = useUpdateClearingConfigMutation();
   const [revenueDefault, setRevenueDefault] = useState("");
   const [accounts, setAccounts] = useState<Record<string, Record<string, string>>>({});
 
-  if (isLoading) return <LoadingSkeleton variant="page" />;
+  if (isLoading || isError) {
+    return (
+      <AccrualQueryState
+        isLoading={isLoading}
+        isError={isError}
+        title="Marktplatz-Clearing nicht verfügbar"
+      >
+        {null}
+      </AccrualQueryState>
+    );
+  }
 
   const currentRevenue = revenueDefault || data?.revenueAccountDefault || "";
   const currentAccounts = data?.marketplaces || {};

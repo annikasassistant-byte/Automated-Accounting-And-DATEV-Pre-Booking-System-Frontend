@@ -2,7 +2,7 @@
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { AccrualQueryState } from "@/components/shared/accrual-query-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { useGetAccrualJournalQuery, usePostAccrualJournalMutation } from "@/serv
 import { formatDateTime } from "@/lib/format";
 
 export function AccrualJournalPage() {
-  const { data, isLoading, refetch } = useGetAccrualJournalQuery({});
+  const { data, isLoading, isError, refetch } = useGetAccrualJournalQuery({});
   const [postJournal, { isLoading: posting }] = usePostAccrualJournalMutation();
   const entries = data?.items ?? [];
 
@@ -26,9 +26,8 @@ export function AccrualJournalPage() {
     }
   };
 
-  if (isLoading) return <LoadingSkeleton variant="page" />;
-
   return (
+    <AccrualQueryState isLoading={isLoading} isError={isError} title="Accrual-Journal nicht verfügbar">
     <div className="space-y-6">
       <PageHeader title="Accrual-Journal" description="Entwürfe und gebuchte Journalzeilen" />
 
@@ -67,5 +66,6 @@ export function AccrualJournalPage() {
         Hinweis: Gebuchte Accrual-Journalzeilen können separat in DATEV exportiert werden (Admin).
       </p>
     </div>
+    </AccrualQueryState>
   );
 }

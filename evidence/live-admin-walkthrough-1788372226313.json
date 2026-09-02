@@ -1,0 +1,476 @@
+{
+  "base": "http://localhost:3000",
+  "api": "http://localhost:5001/api/v1",
+  "testedAt": "2026-09-02T18:03:46.313Z",
+  "total": 28,
+  "pass": 28,
+  "warn": 0,
+  "fail": 0,
+  "accrualApi": [
+    {
+      "path": "/accrual/inbox",
+      "status": 200
+    },
+    {
+      "path": "/accrual/events",
+      "status": 200
+    },
+    {
+      "path": "/accrual/journal",
+      "status": 200
+    },
+    {
+      "path": "/accrual/clearing",
+      "status": 200
+    },
+    {
+      "path": "/reconciliation/marketplace",
+      "status": 200
+    }
+  ],
+  "routes": [
+    {
+      "path": "/admin/dashboard",
+      "navTitle": "Dashboard",
+      "httpStatus": 200,
+      "heading": "Admin-Übersicht",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/users",
+      "navTitle": "Benutzer",
+      "httpStatus": 200,
+      "heading": "Benutzer",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users?limit=100",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/import/bank",
+      "navTitle": "Bank-Import",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/import/paypal",
+      "navTitle": "PayPal-Import",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/import/jtl",
+      "navTitle": "JTL-Import",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/import/marketplace/amazon",
+      "navTitle": "Amazon-Import",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/import/marketplace/backmarket",
+      "navTitle": "Back Market-Import",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/import/marketplace/refurbed",
+      "navTitle": "Refurbed-Import",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/accounting-inbox",
+      "navTitle": "Buchhaltungs-Posteingang",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/accrual/events",
+      "navTitle": "Geschäftsvorfälle",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/accrual/journal",
+      "navTitle": "Accrual-Journal",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/reconciliation/marketplace",
+      "navTitle": "Marktplatz-Auszahlungen",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/transactions",
+      "navTitle": "Transaktionen",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/transactions?status=open",
+      "navTitle": "Offene Posten",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/transactions?status=conflict",
+      "navTitle": "Konflikte",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/patterns",
+      "navTitle": "Mustererkennung",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/rules",
+      "navTitle": "Regelwerk",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/accounts",
+      "navTitle": "Kontenplan",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/accounts/overview",
+      "navTitle": "Kontenübersicht",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/export",
+      "navTitle": "DATEV-Export",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/duplicates",
+      "navTitle": "Duplikate",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/reconciliation",
+      "navTitle": "Abstimmung",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/reports",
+      "navTitle": "Berichte",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/settings/company",
+      "navTitle": "Unternehmen",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/settings/clearing",
+      "navTitle": "Marktplatz-Clearing",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/settings/system-policies",
+      "navTitle": "Systemrichtlinien",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/settings",
+      "navTitle": "Einstellungen",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    },
+    {
+      "path": "/admin/profile",
+      "navTitle": "Profil",
+      "httpStatus": 200,
+      "heading": "Zugang für Admin und Benutzer.",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [
+        {
+          "url": "/api/v1/users/me",
+          "status": 429
+        }
+      ],
+      "bodyHint": "Automated Accounting Sicheres Auth-Portal Zugang für Admin und Benutzer. Melden Sie sich an, um Ihr Konto zu verwalten. "
+    }
+  ]
+}

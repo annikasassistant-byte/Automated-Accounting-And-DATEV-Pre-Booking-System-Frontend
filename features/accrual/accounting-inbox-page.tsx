@@ -3,6 +3,7 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { EmptyState } from "@/components/shared/empty-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useGetAccrualInboxQuery } from "@/services/accountingApi";
 import { formatDateTime } from "@/lib/format";
@@ -12,7 +13,12 @@ export function AccountingInboxPage() {
 
   if (isLoading) return <LoadingSkeleton variant="page" />;
   if (isError || !data) {
-    return <p className="text-destructive">Posteingang konnte nicht geladen werden.</p>;
+    return (
+      <EmptyState
+        title="Posteingang nicht verfügbar"
+        description="Der Accrual-API-Endpunkt antwortet nicht. Prüfen Sie, ob der Server mit Accrual-Routen läuft."
+      />
+    );
   }
 
   return (
@@ -69,14 +75,18 @@ export function AccountingInboxPage() {
           <CardTitle className="text-base">Geschäftsvorfälle (wartend)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {data.pendingEvents.map((ev) => (
-            <div key={ev._id} className="flex justify-between border-b pb-2 text-sm">
-              <span>
-                {ev.eventType} · {ev.marketplaceOrderId || ev.sourceRecordId}
-              </span>
-              <StatusBadge status={ev.status} />
-            </div>
-          ))}
+          {data.pendingEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Keine wartenden Ereignisse</p>
+          ) : (
+            data.pendingEvents.map((ev) => (
+              <div key={ev._id} className="flex justify-between border-b pb-2 text-sm">
+                <span>
+                  {ev.eventType} · {ev.marketplaceOrderId || ev.sourceRecordId}
+                </span>
+                <StatusBadge status={ev.status} />
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -85,14 +95,18 @@ export function AccountingInboxPage() {
           <CardTitle className="text-base">Import-Historie</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          {data.recentImports.map((imp) => (
-            <div key={imp._id} className="flex justify-between">
-              <span>
-                {imp.source}: {imp.filename}
-              </span>
-              <span className="text-muted-foreground">{formatDateTime(imp.createdAt)}</span>
-            </div>
-          ))}
+          {data.recentImports.length === 0 ? (
+            <p className="text-muted-foreground">Noch keine Accrual-Importe</p>
+          ) : (
+            data.recentImports.map((imp) => (
+              <div key={imp._id} className="flex justify-between">
+                <span>
+                  {imp.source}: {imp.filename}
+                </span>
+                <span className="text-muted-foreground">{formatDateTime(imp.createdAt)}</span>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

@@ -2,7 +2,7 @@
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { AccrualQueryState } from "@/components/shared/accrual-query-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import {
 import { formatDateTime } from "@/lib/format";
 
 export function AccrualEventsPage() {
-  const { data, isLoading } = useGetAccrualEventsQuery({ limit: 50 });
+  const { data, isLoading, isError } = useGetAccrualEventsQuery({ limit: 50 });
   const [buildDraft, { isLoading: building }] = useBuildJournalDraftMutation();
 
   const events = data?.items ?? [];
@@ -29,9 +29,8 @@ export function AccrualEventsPage() {
     }
   };
 
-  if (isLoading) return <LoadingSkeleton variant="page" />;
-
   return (
+    <AccrualQueryState isLoading={isLoading} isError={isError} title="Geschäftsvorfälle nicht verfügbar">
     <div className="space-y-6">
       <PageHeader
         title="Geschäftsvorfälle (Accrual)"
@@ -79,5 +78,6 @@ export function AccrualEventsPage() {
         </CardContent>
       </Card>
     </div>
+    </AccrualQueryState>
   );
 }

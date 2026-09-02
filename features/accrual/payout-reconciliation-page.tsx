@@ -2,17 +2,20 @@
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { AccrualQueryState } from "@/components/shared/accrual-query-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { useGetMarketplacePayoutReconciliationQuery } from "@/services/accountingApi";
 
 export function PayoutReconciliationPage() {
-  const { data, isLoading } = useGetMarketplacePayoutReconciliationQuery({});
+  const { data, isLoading, isError } = useGetMarketplacePayoutReconciliationQuery({});
   const rows = data?.items ?? [];
 
-  if (isLoading) return <LoadingSkeleton variant="page" />;
-
   return (
+    <AccrualQueryState
+      isLoading={isLoading}
+      isError={isError}
+      title="Marktplatz-Auszahlungen nicht verfügbar"
+    >
     <div className="space-y-6">
       <PageHeader
         title="Marktplatz-Auszahlungen"
@@ -44,5 +47,6 @@ export function PayoutReconciliationPage() {
         </CardContent>
       </Card>
     </div>
+    </AccrualQueryState>
   );
 }

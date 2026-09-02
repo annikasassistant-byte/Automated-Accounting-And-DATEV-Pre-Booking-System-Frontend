@@ -7,11 +7,13 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { skipToken } from "@reduxjs/toolkit/query";
 import {
   useImportJtlMutation,
   useImportMarketplaceMutation,
   useGetImportsQuery,
 } from "@/services/accountingApi";
+import { EmptyState } from "@/components/shared/empty-state";
 import type { AccrualImportKind } from "@/types/accrual";
 import { formatDateTime } from "@/lib/format";
 
@@ -37,10 +39,9 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   const meta = META[kind];
   const [importJtl, { isLoading: jtlLoading }] = useImportJtlMutation();
   const [importMarketplace, { isLoading: mpLoading }] = useImportMarketplaceMutation();
-  const { data: history = [], refetch } = useGetImportsQuery({
-    source: meta.importSource,
-    limit: 20,
-  });
+  const { data: history = [], refetch } = useGetImportsQuery(
+    meta ? { source: meta.importSource, limit: 20 } : skipToken,
+  );
 
   const [phase, setPhase] = useState<"idle" | "uploading" | "done" | "error">("idle");
   const [result, setResult] = useState<{
@@ -53,6 +54,15 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   } | null>(null);
 
   const isUploading = jtlLoading || mpLoading;
+
+  if (!meta) {
+    return (
+      <EmptyState
+        title="Import nicht verfügbar"
+        description={`Unbekannter Import-Typ „${kind}“. Unterstützt: JTL, Amazon, Back Market, Refurbed.`}
+      />
+    );
+  }
 
   const processFile = async (f: File) => {
     if (!f.name.toLowerCase().endsWith(".csv")) {

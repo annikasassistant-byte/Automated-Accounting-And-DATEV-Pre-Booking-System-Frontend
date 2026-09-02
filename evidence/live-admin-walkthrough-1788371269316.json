@@ -1,0 +1,391 @@
+{
+  "base": "https://automated-accounting-and-datev-pre.vercel.app",
+  "api": "https://automated-accounting-and-datev-pre-3lr4.onrender.com/api/v1",
+  "testedAt": "2026-09-02T17:47:49.315Z",
+  "total": 28,
+  "pass": 23,
+  "warn": 5,
+  "fail": 0,
+  "accrualApi": [
+    {
+      "path": "/accrual/inbox",
+      "status": 404
+    },
+    {
+      "path": "/accrual/events",
+      "status": 404
+    },
+    {
+      "path": "/accrual/journal",
+      "status": 404
+    },
+    {
+      "path": "/accrual/clearing",
+      "status": 404
+    },
+    {
+      "path": "/reconciliation/marketplace",
+      "status": 404
+    }
+  ],
+  "routes": [
+    {
+      "path": "/admin/dashboard",
+      "navTitle": "Dashboard",
+      "httpStatus": 200,
+      "heading": "Admin-Übersicht",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/users",
+      "navTitle": "Benutzer",
+      "httpStatus": 200,
+      "heading": "Benutzer",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/import/bank",
+      "navTitle": "Bank-Import",
+      "httpStatus": 200,
+      "heading": "Bank-CSV Import",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/import/paypal",
+      "navTitle": "PayPal-Import",
+      "httpStatus": 200,
+      "heading": "PayPal-CSV Import",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/import/jtl",
+      "navTitle": "JTL-Import",
+      "httpStatus": 200,
+      "heading": "JTL-CSV Import",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/import/marketplace/amazon",
+      "navTitle": "Amazon-Import",
+      "httpStatus": 200,
+      "heading": "Etwas ist schiefgelaufen",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Etwas ist schiefgelaufen Cannot read properties of undefined (reading 'importSource') Erneut versuchen"
+    },
+    {
+      "path": "/admin/import/marketplace/backmarket",
+      "navTitle": "Back Market-Import",
+      "httpStatus": 200,
+      "heading": "Etwas ist schiefgelaufen",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Etwas ist schiefgelaufen Cannot read properties of undefined (reading 'importSource') Erneut versuchen"
+    },
+    {
+      "path": "/admin/import/marketplace/refurbed",
+      "navTitle": "Refurbed-Import",
+      "httpStatus": 200,
+      "heading": "Etwas ist schiefgelaufen",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Etwas ist schiefgelaufen Cannot read properties of undefined (reading 'importSource') Erneut versuchen"
+    },
+    {
+      "path": "/admin/accounting-inbox",
+      "navTitle": "Buchhaltungs-Posteingang",
+      "httpStatus": 200,
+      "heading": "",
+      "verdict": "WARN",
+      "loadError": false,
+      "accrualApiErrors": [
+        {
+          "url": "/api/v1/accrual/inbox",
+          "status": 404
+        }
+      ],
+      "apiErrors": [
+        {
+          "url": "/api/v1/accrual/inbox",
+          "status": 404
+        }
+      ],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/accrual/events",
+      "navTitle": "Geschäftsvorfälle",
+      "httpStatus": 200,
+      "heading": "Geschäftsvorfälle (Accrual)",
+      "verdict": "WARN",
+      "loadError": false,
+      "accrualApiErrors": [
+        {
+          "url": "/api/v1/accrual/events?limit=50",
+          "status": 404
+        }
+      ],
+      "apiErrors": [
+        {
+          "url": "/api/v1/accrual/events?limit=50",
+          "status": 404
+        }
+      ],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/accrual/journal",
+      "navTitle": "Accrual-Journal",
+      "httpStatus": 200,
+      "heading": "Accrual-Journal",
+      "verdict": "WARN",
+      "loadError": false,
+      "accrualApiErrors": [
+        {
+          "url": "/api/v1/accrual/journal?",
+          "status": 404
+        }
+      ],
+      "apiErrors": [
+        {
+          "url": "/api/v1/accrual/journal?",
+          "status": 404
+        }
+      ],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/reconciliation/marketplace",
+      "navTitle": "Marktplatz-Auszahlungen",
+      "httpStatus": 200,
+      "heading": "Marktplatz-Auszahlungen",
+      "verdict": "WARN",
+      "loadError": false,
+      "accrualApiErrors": [
+        {
+          "url": "/api/v1/reconciliation/marketplace?",
+          "status": 404
+        }
+      ],
+      "apiErrors": [
+        {
+          "url": "/api/v1/reconciliation/marketplace?",
+          "status": 404
+        }
+      ],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/transactions",
+      "navTitle": "Transaktionen",
+      "httpStatus": 200,
+      "heading": "Transaktionen",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/transactions?status=open",
+      "navTitle": "Offene Posten",
+      "httpStatus": 200,
+      "heading": "Offene Posten",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/transactions?status=conflict",
+      "navTitle": "Konflikte",
+      "httpStatus": 200,
+      "heading": "Konflikte",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/patterns",
+      "navTitle": "Mustererkennung",
+      "httpStatus": 200,
+      "heading": "Muster & Vorschläge",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/rules",
+      "navTitle": "Regelwerk",
+      "httpStatus": 200,
+      "heading": "Buchungsregeln",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/accounts",
+      "navTitle": "Kontenplan",
+      "httpStatus": 200,
+      "heading": "Kontenplan",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/accounts/overview",
+      "navTitle": "Kontenübersicht",
+      "httpStatus": 200,
+      "heading": "Kontenübersicht",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/export",
+      "navTitle": "DATEV-Export",
+      "httpStatus": 200,
+      "heading": "DATEV Export",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/duplicates",
+      "navTitle": "Duplikate",
+      "httpStatus": 200,
+      "heading": "Duplikate",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/reconciliation",
+      "navTitle": "Abstimmung",
+      "httpStatus": 200,
+      "heading": "Abstimmung",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/reports",
+      "navTitle": "Berichte",
+      "httpStatus": 200,
+      "heading": "Berichte",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/settings/company",
+      "navTitle": "Unternehmen",
+      "httpStatus": 200,
+      "heading": "Firmen- & DATEV-Einstellungen",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/settings/clearing",
+      "navTitle": "Marktplatz-Clearing",
+      "httpStatus": 200,
+      "heading": "Marktplatz-Clearing",
+      "verdict": "WARN",
+      "loadError": false,
+      "accrualApiErrors": [
+        {
+          "url": "/api/v1/accrual/clearing",
+          "status": 404
+        }
+      ],
+      "apiErrors": [
+        {
+          "url": "/api/v1/accrual/clearing",
+          "status": 404
+        }
+      ],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/settings/system-policies",
+      "navTitle": "Systemrichtlinien",
+      "httpStatus": 200,
+      "heading": "Systemrichtlinien",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/settings",
+      "navTitle": "Einstellungen",
+      "httpStatus": 200,
+      "heading": "Einstellungen",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    },
+    {
+      "path": "/admin/profile",
+      "navTitle": "Profil",
+      "httpStatus": 200,
+      "heading": "Profil",
+      "verdict": "PASS",
+      "loadError": false,
+      "accrualApiErrors": [],
+      "apiErrors": [],
+      "bodyHint": "Automated Accounting Verwaltung Übersicht Dashboard Benutzer Buchhaltung Bank-Import PayPal-Import JTL-Import Amazon-Imp"
+    }
+  ]
+}
