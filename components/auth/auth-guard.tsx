@@ -13,6 +13,10 @@ interface AuthGuardProps {
   allowedRoles?: UserRole[];
 }
 
+
+
+
+
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   const { isAuthenticated, user, hasRole, setUser, logout } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
