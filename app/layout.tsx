@@ -4,6 +4,19 @@ import "./globals.css";
 import { AppProviders } from "@/providers/app-providers";
 // next logs
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
