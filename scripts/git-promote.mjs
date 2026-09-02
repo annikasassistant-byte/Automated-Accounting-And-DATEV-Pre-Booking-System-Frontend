@@ -91,14 +91,6 @@ function runPromoteStep(config) {
     gitRun(`checkout ${config.branch}`);
   }
 
-  if (config.branch === "production") {
-    // Exact copy of before_production — avoids merge conflicts with old production
-    gitRun(`fetch origin ${config.source}`);
-    gitRun(`reset --hard origin/${config.source}`);
-    gitRun(`push origin ${config.branch} --force-with-lease`);
-    return;
-  }
-
   gitRun(`pull origin ${config.source}`);
   gitRun("add .");
   tryCommit(config.message);
