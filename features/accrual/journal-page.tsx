@@ -2,15 +2,17 @@
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AccrualQueryState } from "@/components/shared/accrual-query-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useGetAccrualJournalQuery, usePostAccrualJournalMutation } from "@/services/accountingApi";
 import { formatDateTime } from "@/lib/format";
+import { useAuthStore } from "@/lib/auth-store";
 
 export function AccrualJournalPage() {
-  const { data, isLoading, isError, refetch } = useGetAccrualJournalQuery({});
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
+  const { data, isLoading, refetch } = useGetAccrualJournalQuery({});
   const [postJournal, { isLoading: posting }] = usePostAccrualJournalMutation();
   const entries = data?.items ?? [];
 
@@ -26,8 +28,9 @@ export function AccrualJournalPage() {
     }
   };
 
+  if (isLoading) return <LoadingSkeleton variant="page" />;
+
   return (
-    <AccrualQueryState isLoading={isLoading} isError={isError} title="Accrual-Journal nicht verfügbar">
     <div className="space-y-6">
       <PageHeader title="Accrual-Journal" description="Entwürfe und gebuchte Journalzeilen" />
 
@@ -50,7 +53,7 @@ export function AccrualJournalPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={entry.status} />
-                  {entry.status === "draft" && (
+                  {isAdmin && entry.status === "draft" && (
                     <Button size="sm" disabled={posting} onClick={() => onPost(entry._id)}>
                       Buchen
                     </Button>
@@ -63,9 +66,9 @@ export function AccrualJournalPage() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Hinweis: Gebuchte Accrual-Journalzeilen können separat in DATEV exportiert werden (Admin).
+        Hinweis: Financial sales/revenue sind Clearing-Bewegungen, kein zweiter Umsatz. Accrual→DATEV
+        Export folgt separat — Cash-DATEV bleibt unverändert.
       </p>
     </div>
-    </AccrualQueryState>
   );
 }

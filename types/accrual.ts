@@ -61,6 +61,7 @@ export interface JournalLine {
 export interface ClearingConfig {
   revenueAccountDefault?: string | null;
   fxPolicyNote?: string;
+  provisionalFxEnabled?: boolean;
   marketplaces?: Record<
     string,
     {
@@ -68,6 +69,8 @@ export interface ClearingConfig {
       feeAccount?: string | null;
       refundAccount?: string | null;
       debtorAccount?: string | null;
+      revenueAccount?: string | null;
+      adjustmentAccount?: string | null;
     }
   >;
 }

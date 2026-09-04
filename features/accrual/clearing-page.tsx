@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AccrualQueryState } from "@/components/shared/accrual-query-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { toast } from "sonner";
 import {
   useGetClearingConfigQuery,
@@ -15,25 +15,26 @@ import type { AccrualMarketplace } from "@/types/accrual";
 
 const MARKETPLACES: AccrualMarketplace[] = ["amazon", "backmarket", "refurbed"];
 
+const ACCOUNT_FIELDS = [
+  "revenueAccount",
+  "clearingAccount",
+  "feeAccount",
+  "refundAccount",
+  "debtorAccount",
+  "adjustmentAccount",
+] as const;
+
 export function ClearingSettingsPage() {
-  const { data, isLoading, isError } = useGetClearingConfigQuery();
+  const { data, isLoading } = useGetClearingConfigQuery();
   const [update, { isLoading: saving }] = useUpdateClearingConfigMutation();
   const [revenueDefault, setRevenueDefault] = useState("");
+  const [fxNote, setFxNote] = useState("");
   const [accounts, setAccounts] = useState<Record<string, Record<string, string>>>({});
 
-  if (isLoading || isError) {
-    return (
-      <AccrualQueryState
-        isLoading={isLoading}
-        isError={isError}
-        title="Marktplatz-Clearing nicht verfügbar"
-      >
-        {null}
-      </AccrualQueryState>
-    );
-  }
+  if (isLoading) return <LoadingSkeleton variant="page" />;
 
   const currentRevenue = revenueDefault || data?.revenueAccountDefault || "";
+  const currentFx = fxNote || data?.fxPolicyNote || "";
   const currentAccounts = data?.marketplaces || {};
 
   const save = async () => {
@@ -47,6 +48,7 @@ export function ClearingSettingsPage() {
       }
       await update({
         revenueAccountDefault: currentRevenue || null,
+        fxPolicyNote: currentFx,
         marketplaces,
       }).unwrap();
       toast.success("Clearing-Konten gespeichert");
@@ -61,19 +63,36 @@ export function ClearingSettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Marktplatz-Clearing"
-        description="Verrechnungskonten pro Marktplatz (nicht 1361 Bank↔PayPal)"
+        description="Separate Erlöskonten pro Marktplatz (Platzhalter bis Steuerberater-Final). Financial sales = Clearing."
       />
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Standard-Erlöskonto</CardTitle>
+          <CardTitle className="text-base">Standard-Erlöskonto (Fallback)</CardTitle>
         </CardHeader>
         <CardContent>
           <Input
-            placeholder="z. B. 8400"
+            placeholder="z. B. 81973"
             defaultValue={currentRevenue}
             onChange={(e) => setRevenueDefault(e.target.value)}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">FX-Policy (provisional / true-up)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input
+            placeholder="Kursquelle/Datum — konfigurierbar, nicht hard-coded"
+            defaultValue={currentFx}
+            onChange={(e) => setFxNote(e.target.value)}
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            SEK→EUR provisional speichern; Settlement-True-up als separate FX-Differenz, Originalsale nicht
+            überschreiben.
+          </p>
         </CardContent>
       </Card>
 
@@ -83,22 +102,20 @@ export function ClearingSettingsPage() {
             <CardTitle className="text-base capitalize">{mp}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
-            {(["clearingAccount", "feeAccount", "refundAccount", "debtorAccount"] as const).map(
-              (field) => (
-                <div key={field}>
-                  <label className="mb-1 block text-xs text-muted-foreground">{field}</label>
-                  <Input
-                    defaultValue={currentAccounts[mp]?.[field] || ""}
-                    onChange={(e) =>
-                      setAccounts((prev) => ({
-                        ...prev,
-                        [mp]: { ...(prev[mp] || {}), [field]: e.target.value },
-                      }))
-                    }
-                  />
-                </div>
-              ),
-            )}
+            {ACCOUNT_FIELDS.map((field) => (
+              <div key={field}>
+                <label className="mb-1 block text-xs text-muted-foreground">{field}</label>
+                <Input
+                  defaultValue={(currentAccounts[mp] as Record<string, string> | undefined)?.[field] || ""}
+                  onChange={(e) =>
+                    setAccounts((prev) => ({
+                      ...prev,
+                      [mp]: { ...(prev[mp] || {}), [field]: e.target.value },
+                    }))
+                  }
+                />
+              </div>
+            ))}
           </CardContent>
         </Card>
       ))}

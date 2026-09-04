@@ -593,12 +593,13 @@ export const accountingApi = createApi({
 
     importMarketplace: builder.mutation<
       AccrualImportResult,
-      { channel: AccrualMarketplace; body: FormData }
+      { channel: AccrualMarketplace; body: FormData; reportType?: "order" | "financial" | "auto" }
     >({
-      query: ({ channel, body }) => ({
+      query: ({ channel, body, reportType }) => ({
         url: `/imports/marketplace/${channel}`,
         method: "POST",
         body,
+        params: reportType && reportType !== "auto" ? { reportType } : undefined,
       }),
       transformResponse: (r: ApiSuccess<AccrualImportResult>) => r.data,
       invalidatesTags: ["Accrual", "Imports"],

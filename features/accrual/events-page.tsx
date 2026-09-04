@@ -2,7 +2,7 @@
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AccrualQueryState } from "@/components/shared/accrual-query-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -11,9 +11,13 @@ import {
   useBuildJournalDraftMutation,
 } from "@/services/accountingApi";
 import { formatDateTime } from "@/lib/format";
+import { useAuthStore } from "@/lib/auth-store";
+
+const NON_BOOKABLE = new Set(["ORDER_CREATED", "CANCELLATION"]);
 
 export function AccrualEventsPage() {
-  const { data, isLoading, isError } = useGetAccrualEventsQuery({ limit: 50 });
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
+  const { data, isLoading } = useGetAccrualEventsQuery({ limit: 50 });
   const [buildDraft, { isLoading: building }] = useBuildJournalDraftMutation();
 
   const events = data?.items ?? [];
@@ -29,12 +33,13 @@ export function AccrualEventsPage() {
     }
   };
 
+  if (isLoading) return <LoadingSkeleton variant="page" />;
+
   return (
-    <AccrualQueryState isLoading={isLoading} isError={isError} title="Geschäftsvorfälle nicht verfügbar">
     <div className="space-y-6">
       <PageHeader
         title="Geschäftsvorfälle (Accrual)"
-        description="JTL- und Marktplatz-Ereignisse parallel zum Cash-Pfad"
+        description="ORDER_CREATED ≠ Umsatz; Financial sales/revenue = Clearing (SETTLEMENT)"
       />
 
       <Card>
@@ -61,16 +66,18 @@ export function AccrualEventsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={ev.status} />
-                  {ev.status === "matched" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={building}
-                      onClick={() => onBuild(ev._id)}
-                    >
-                      Journal-Entwurf
-                    </Button>
-                  )}
+                  {isAdmin &&
+                    ev.status === "matched" &&
+                    !NON_BOOKABLE.has(ev.eventType) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={building}
+                        onClick={() => onBuild(ev._id)}
+                      >
+                        Journal-Entwurf
+                      </Button>
+                    )}
                 </div>
               </div>
             ))
@@ -78,6 +85,5 @@ export function AccrualEventsPage() {
         </CardContent>
       </Card>
     </div>
-    </AccrualQueryState>
   );
 }
