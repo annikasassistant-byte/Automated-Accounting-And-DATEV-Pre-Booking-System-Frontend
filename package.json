@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:smoke": "node scripts/smoke-routes.mjs",
+    "docs:screens": "node scripts/capture-screens.mjs",
     "promote": "node scripts/git-promote.mjs all",
     "promote:staging": "node scripts/git-promote.mjs staging",
     "promote:production": "node scripts/git-promote.mjs production",

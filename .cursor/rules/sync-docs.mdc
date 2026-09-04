@@ -1,0 +1,28 @@
+---
+description: On every frontend code change, sync README, screenshots, and shared project data with the server repo
+alwaysApply: true
+---
+
+# Sync frontend docs with the server repo
+
+Whenever this frontend changes (feature, bug fix, screen, route, copy, or live URL), update **`README.md` and screenshots in this repo and the matching files in the server repo** in the same effort. Keep both sides aligned.
+
+## Same change must cover
+
+- `README.md` — short project description at the top, live URLs, tech stack, screens, features
+- `docs/screenshots/auth|admin|user/` — every portal screen
+- `docs/screenshots/live/` — API status, health, Swagger (copied from capture)
+- Server sibling: `../server/README.md` (shared blurb + URLs) and `../server/docs/screenshots/` (same screenshot tree)
+
+If a new screen or route is added, add it to the README **and** to `scripts/capture-screens.mjs`, then recapture:
+
+```bash
+node scripts/capture-screens.mjs
+```
+
+## Do not
+
+- Do not invent features that are not in the code
+- Do not commit secrets
+- Do not update only this README when screens or shared product text changed
+- Do not uncomment Cursor-rule notes in README (keep them HTML-commented)

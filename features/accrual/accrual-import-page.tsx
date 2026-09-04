@@ -7,13 +7,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { skipToken } from "@reduxjs/toolkit/query";
 import {
   useImportJtlMutation,
   useImportMarketplaceMutation,
   useGetImportsQuery,
 } from "@/services/accountingApi";
-import { EmptyState } from "@/components/shared/empty-state";
 import type { AccrualImportKind } from "@/types/accrual";
 import { formatDateTime } from "@/lib/format";
 
@@ -40,10 +38,12 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   const [importJtl, { isLoading: jtlLoading }] = useImportJtlMutation();
   const [importMarketplace, { isLoading: mpLoading }] = useImportMarketplaceMutation();
   const { data: history = [], refetch } = useGetImportsQuery(
-    meta ? { source: meta.importSource, limit: 20 } : skipToken,
+    { source: meta?.importSource || "jtl", limit: 20 },
+    { skip: !meta },
   );
 
   const [phase, setPhase] = useState<"idle" | "uploading" | "done" | "error">("idle");
+  const [bmReportType, setBmReportType] = useState<"auto" | "order" | "financial">("auto");
   const [result, setResult] = useState<{
     createdCount?: number;
     duplicateCount?: number;
@@ -56,12 +56,7 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   const isUploading = jtlLoading || mpLoading;
 
   if (!meta) {
-    return (
-      <EmptyState
-        title="Import nicht verfügbar"
-        description={`Unbekannter Import-Typ „${kind}“. Unterstützt: JTL, Amazon, Back Market, Refurbed.`}
-      />
-    );
+    return <p className="text-destructive">Unbekannter Import-Typ: {String(kind)}</p>;
   }
 
   const processFile = async (f: File) => {
@@ -76,7 +71,11 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
       const payload =
         kind === "jtl"
           ? await importJtl(formData).unwrap()
-          : await importMarketplace({ channel: kind, body: formData }).unwrap();
+          : await importMarketplace({
+              channel: kind,
+              body: formData,
+              reportType: kind === "backmarket" ? bmReportType : undefined,
+            }).unwrap();
       setResult(payload);
       setPhase("done");
       void refetch();
@@ -95,7 +94,44 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={meta.title} description={`${meta.eyebrow}-CSV hochladen und verarbeiten`} />
+      <PageHeader
+        title={meta.title}
+        description={
+          kind === "backmarket"
+            ? "Order Report (kein Umsatz) oder Financial/Settlement (Clearing/Fees) — getrennt wählen"
+            : `${meta.eyebrow}-CSV hochladen und verarbeiten`
+        }
+      />
+
+      {kind === "backmarket" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Report-Typ</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            {(
+              [
+                ["auto", "Auto-Erkennung"],
+                ["order", "Order Report"],
+                ["financial", "Financial / Settlement"],
+              ] as const
+            ).map(([value, label]) => (
+              <Button
+                key={value}
+                type="button"
+                size="sm"
+                variant={bmReportType === value ? "default" : "outline"}
+                onClick={() => setBmReportType(value)}
+              >
+                {label}
+              </Button>
+            ))}
+            <p className="w-full text-xs text-muted-foreground">
+              Financial sales = Clearing, kein zweiter Umsatz. orderline_fee wird nicht gebucht.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
