@@ -40,11 +40,13 @@ import type {
   AccrualImportResult,
   AccrualInbox,
   AccrualMarketplace,
+  AccrualOverview,
   AccountingException,
   BusinessEvent,
   ClearingConfig,
   JournalEntry,
   JournalLine,
+  PayoutOverviewRow,
 } from "@/types/accrual";
 
 type Paginated<T> = { items: T[]; meta?: { page?: number; limit?: number; total?: number } };
@@ -401,6 +403,21 @@ export const accountingApi = createApi({
       invalidatesTags: ["Suggestions"],
     }),
 
+    seedLexofficePatterns: builder.mutation<
+      {
+        linesParsed: number;
+        clustersFound: number;
+        suggestionsCreated: number;
+        skippedLowConfidence: number;
+        note?: string;
+      },
+      FormData
+    >({
+      query: (body) => ({ url: "/patterns/lexoffice", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<any>) => r.data,
+      invalidatesTags: ["Suggestions"],
+    }),
+
     // ──────────── Exports ────────────
     previewExport: builder.mutation<
       { transactionCount: number; total: number; warnings: string[]; errors: string[] },
@@ -584,6 +601,15 @@ export const accountingApi = createApi({
       providesTags: ["Reports"],
     }),
 
+    getAccrualOverview: builder.query<AccrualOverview, { from?: string; to?: string } | void>({
+      query: (args) => ({
+        url: "/reports/accrual-overview",
+        params: { from: args?.from, to: args?.to },
+      }),
+      transformResponse: (r: ApiSuccess<AccrualOverview>) => r.data,
+      providesTags: ["Reports", "Accrual"],
+    }),
+
     // ──────────── Accrual ────────────
     importJtl: builder.mutation<AccrualImportResult, FormData>({
       query: (body) => ({ url: "/imports/jtl", method: "POST", body }),
@@ -679,11 +705,19 @@ export const accountingApi = createApi({
     }),
 
     getMarketplacePayoutReconciliation: builder.query<
-      Paginated<{ payout: BusinessEvent; reconStatus: string; candidateTransactions: unknown[] }>,
+      Paginated<{
+        payout: BusinessEvent;
+        reconStatus: string;
+        candidateTransactions: unknown[];
+        expectedCents?: number | null;
+      }> & { overview?: { summaries: PayoutOverviewRow[] } },
       Record<string, string | undefined>
     >({
       query: (params) => ({ url: "/reconciliation/marketplace", params }),
-      transformResponse: (r: ApiSuccess<any[]>) => paginatedFromApi(r),
+      transformResponse: (r: ApiSuccess<any[]>) => ({
+        ...paginatedFromApi(r),
+        overview: (r.meta as { overview?: { summaries: PayoutOverviewRow[] } } | undefined)?.overview,
+      }),
       providesTags: ["Accrual", "Reconciliation"],
     }),
 
@@ -743,6 +777,7 @@ export const {
   useAcceptSuggestionMutation,
   useRejectSuggestionMutation,
   useAnalyzePatternsMutation,
+  useSeedLexofficePatternsMutation,
   // Exports
   usePreviewExportMutation,
   useValidateExportMutation,
@@ -766,6 +801,7 @@ export const {
   // Reports
   useGetAccountTotalsQuery,
   useGetStatusBreakdownQuery,
+  useGetAccrualOverviewQuery,
   // Accrual
   useImportJtlMutation,
   useImportMarketplaceMutation,

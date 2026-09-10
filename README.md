@@ -92,7 +92,7 @@ Open [http://localhost:3000](http://localhost:3000) → `/login`.
 
 - **Auth:** `/login`, `/forgot-password`, `/verify-otp`, `/reset-password`, `/unauthorized`
 - **Accounting (cash):** import bank/paypal, transactions, open items, patterns, rules, accounts, DATEV export, duplicates, reconciliation, reports, company settings
-- **Accrual:** JTL + marketplace imports, accounting inbox, business events, accrual journal, marketplace payout reconciliation
+- **Accrual:** JTL + marketplace imports (Amazon Bestellreport `.txt`/CSV + Financial), accounting inbox (`invoice_pending`), business events with ECB/marketplace FX, accrual journal drafts, expected-vs-actual payout recon, July accrual report
 - **Admin only:** `/admin/users`, `/admin/settings/clearing`, plus write actions on rules/accounts/company settings and accrual journal posting
 
 ## Coding structure
@@ -184,13 +184,14 @@ Shared Buchhaltung nav (both prefixes): Bank-Import, PayPal-Import, Transaktione
 |----------------|--------|----------------|
 | `features/import` | `…/import/bank`, `…/import/paypal` | CSV upload, import history, Guthaben check, reprocess |
 | `features/transactions` | `…/transactions`, `?status=open`, `?status=conflict` | List, assign, bulk status, apply-rules, detail drawer, create-rule (admin) |
-| `features/patterns` | `…/patterns` | Analyze + HITL accept/reject suggestions (writes admin) |
+| `features/patterns` | `…/patterns` | Analyze + LexOffice DATEV suggestions (HITL; never 10001/70002) |
+| `features/reports` | `…/reports` | Account totals, status breakdown, accrual overview (revenue 81971–73) |
+| `features/accrual` | `…/import/jtl`, `…/import/marketplace/{amazon,backmarket,refurbed}`, `…/accounting-inbox`, `…/accrual/events`, `…/accrual/journal`, `…/reconciliation/marketplace` | Amazon order vs financial; Rechnung ausstehend; expected payout vs actual |
 | `features/rules` | `…/rules` | CRUD, enable/disable, test, inventory seed (writes admin) |
 | `features/accounts` | `…/accounts`, `…/accounts/overview` | Chart CRUD/seed/CSV, overview + ledger (writes admin) |
 | `features/export` | `…/export` | DATEV preview → validate → create → download |
 | `features/duplicates` | `…/duplicates` | List + resolve (merge / ignore / keep_both) |
 | `features/reconciliation` | `…/reconciliation` | Period summary + PayPal balance by import |
-| `features/reports` | `…/reports` | Account totals + status breakdown |
 | `features/settings` | `…/settings/company`, `/admin/settings/system-policies` | Company/DATEV (admin write); system policies (admin only) |
 | `features/profile` | `…/profile` | Name, phone, password, notification prefs |
 | Admin users | `/admin/users` | Create / update / deactivate users |
@@ -199,7 +200,7 @@ Admin-only **writes** (UI + API): rules, accounts seed/CRUD, company/DATEV/syste
 
 ### Data layer (implemented)
 
-- `accountingApi` — accounts, imports, transactions, rules, suggestions, DATEV, recon, duplicates, settings, reports
+- `accountingApi` — accounts, imports, transactions, rules, suggestions, DATEV, recon, duplicates, settings, reports, accrual (inbox, events, journal, payout expected, overview)
 - `authApi` — login/logout/OTP/reset, profile, admin user CRUD
 - `baseQueryWithReauth` — Bearer header, `X-Device-Id`, cookie credentials, refresh on 401
 
@@ -207,10 +208,9 @@ Admin-only **writes** (UI + API): rules, accounts seed/CRUD, company/DATEV/syste
 
 - Notification bell in the navbar is **UI-only** (not wired to API/socket notifications)
 - Open/conflict queues mostly use `getTransactions?status=` (dedicated RTK hooks exist but are unused on those screens)
-- Accrual: Financial sales/revenue treated as **Clearing**; BM Order vs Financial import selector; exception resolve + payout match wired for admin
+- Accrual: Amazon Bestellstatus is authoritative (cancel = no SALE); shipped without JTL invoice stays `invoice_pending`; financial lines = clearing; ECB FX (marketplace EUR wins); expected payout vs actual; LexOffice DATEV expense suggestions
 - Accrual → DATEV export **not** in UI yet (cash DATEV unchanged)
-- Fee-invoice monthly control + FX true-up posting still pending server/client follow-up
-- Amazon channel ON HOLD (no client source data)
+- Fee-invoice monthly control + FX true-up posting still pending
 
 <!--
 ## Keeping this README current

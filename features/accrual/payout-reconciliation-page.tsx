@@ -12,6 +12,7 @@ import {
   useGetMarketplacePayoutReconciliationQuery,
   useMatchMarketplacePayoutMutation,
 } from "@/services/accountingApi";
+import { formatCurrencyPrecise } from "@/lib/format";
 import { useAuthStore } from "@/lib/auth-store";
 
 export function PayoutReconciliationPage() {
@@ -20,6 +21,7 @@ export function PayoutReconciliationPage() {
   const [matchPayout, { isLoading: matching }] = useMatchMarketplacePayoutMutation();
   const [txIds, setTxIds] = useState<Record<string, string>>({});
   const rows = data?.items ?? [];
+  const summaries = data?.overview?.summaries ?? [];
 
   const onMatch = async (payoutEventId: string) => {
     const transactionId = txIds[payoutEventId]?.trim();
@@ -44,8 +46,27 @@ export function PayoutReconciliationPage() {
     <div className="space-y-6">
       <PageHeader
         title="Marktplatz-Auszahlungen"
-        description="Payout gegen Bank/PayPal abstimmen — erzeugt keinen Umsatz, nur Clearing-Ausgleich"
+        description="Erwartete Auszahlung (Settlement+Fees+Refunds+Adjustments) gegen tatsächliche Payouts und Bank/PayPal — kein Umsatz, kein 1:1 Order-Match"
       />
+
+      {summaries.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-3">
+          {summaries.map((s) => (
+            <Card key={s.marketplace}>
+              <CardHeader>
+                <CardTitle className="text-base capitalize">{s.marketplace}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1 text-sm">
+                <p>Erwartet: {formatCurrencyPrecise((s.expectedCents || 0) / 100)}</p>
+                <p>Tatsächlich: {formatCurrencyPrecise((s.actualPayoutCents || 0) / 100)}</p>
+                <p className="font-medium">
+                  Differenz: {formatCurrencyPrecise((s.differenceCents || 0) / 100)}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <Card>
         <CardHeader>

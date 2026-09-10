@@ -12,6 +12,15 @@ export interface AccrualImportResult {
   message?: string;
 }
 
+export interface BusinessEventFx {
+  originalCurrency?: string | null;
+  originalAmountCents?: number | null;
+  eurAmountCents?: number | null;
+  exchangeRate?: number | null;
+  exchangeRateDate?: string | null;
+  exchangeRateSource?: string | null;
+}
+
 export interface BusinessEvent {
   _id: string;
   eventType: string;
@@ -22,6 +31,7 @@ export interface BusinessEvent {
   matchStatus?: string | null;
   source: string;
   sourceRecordId: string;
+  fx?: BusinessEventFx | null;
 }
 
 export interface AccountingException {
@@ -39,7 +49,60 @@ export interface AccrualInbox {
   openExceptionCount: number;
   openExceptions: AccountingException[];
   pendingEvents: BusinessEvent[];
+  invoicePendingCount?: number;
   recentImports: Array<{ _id: string; source: string; filename: string; createdAt: string }>;
+}
+
+export interface PayoutOverviewRow {
+  marketplace: string;
+  expectedCents: number;
+  actualPayoutCents: number;
+  differenceCents: number;
+  salesCents?: number;
+  feesCents?: number;
+  refundsCents?: number;
+  settlementCents?: number;
+  payoutCount?: number;
+  note?: string;
+}
+
+export interface AccrualOverview {
+  period: { from: string | null; to: string | null };
+  revenueByMarketplace: Array<{
+    marketplace: string;
+    revenueAccount: string;
+    salesCents: number;
+    salesCount: number;
+    refundsCents: number;
+    feesCents: number;
+    adjustmentsCents: number;
+    settlementCents?: number;
+    expectedPayoutCents?: number;
+    actualPayoutCents?: number;
+    payoutDifferenceCents?: number;
+    netCents: number;
+  }>;
+  cancellationsCount: number;
+  invoicePendingCount: number;
+  invoicePending: BusinessEvent[];
+  openExceptionCount: number;
+  unclassifiedCashCount: number;
+  unclassifiedCash: unknown[];
+  classifiedExpenses: Array<{
+    id: string;
+    bookingDate?: string;
+    counterpartyName?: string;
+    purpose?: string;
+    amountCents?: number;
+    konto?: string;
+    status?: string;
+  }>;
+  decisionsNeeded: Array<{
+    kind: string;
+    id: string;
+    title: string;
+    marketplace?: string | null;
+  }>;
 }
 
 export interface JournalEntry {

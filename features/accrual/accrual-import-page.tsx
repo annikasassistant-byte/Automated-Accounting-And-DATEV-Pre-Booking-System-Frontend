@@ -43,7 +43,7 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   );
 
   const [phase, setPhase] = useState<"idle" | "uploading" | "done" | "error">("idle");
-  const [bmReportType, setBmReportType] = useState<"auto" | "order" | "financial">("auto");
+  const [reportType, setReportType] = useState<"auto" | "order" | "financial">("auto");
   const [result, setResult] = useState<{
     createdCount?: number;
     duplicateCount?: number;
@@ -60,8 +60,9 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   }
 
   const processFile = async (f: File) => {
-    if (!f.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Nur CSV-Dateien werden unterstützt");
+    const lower = f.name.toLowerCase();
+    if (!lower.endsWith(".csv") && !lower.endsWith(".txt")) {
+      toast.error("Nur CSV- oder TXT-Dateien werden unterstützt");
       return;
     }
     setPhase("uploading");
@@ -74,7 +75,7 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
           : await importMarketplace({
               channel: kind,
               body: formData,
-              reportType: kind === "backmarket" ? bmReportType : undefined,
+              reportType: kind === "backmarket" || kind === "amazon" ? reportType : undefined,
             }).unwrap();
       setResult(payload);
       setPhase("done");
@@ -97,13 +98,15 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
       <PageHeader
         title={meta.title}
         description={
-          kind === "backmarket"
-            ? "Order Report (kein Umsatz) oder Financial/Settlement (Clearing/Fees) — getrennt wählen"
-            : `${meta.eyebrow}-CSV hochladen und verarbeiten`
+          kind === "amazon"
+            ? "Bestellreport (Status ist führend: Storno = kein Umsatz; Versand ohne Rechnung = Rechnung ausstehend) oder Financial/Settlement (Clearing, kein Umsatz)"
+            : kind === "backmarket"
+              ? "Order Report (kein Umsatz) oder Financial/Settlement (Clearing/Fees) — getrennt wählen"
+              : `${meta.eyebrow}-CSV hochladen und verarbeiten`
         }
       />
 
-      {kind === "backmarket" && (
+      {(kind === "backmarket" || kind === "amazon") && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Report-Typ</CardTitle>
@@ -112,7 +115,7 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
             {(
               [
                 ["auto", "Auto-Erkennung"],
-                ["order", "Order Report"],
+                ["order", kind === "amazon" ? "Bestellreport" : "Order Report"],
                 ["financial", "Financial / Settlement"],
               ] as const
             ).map(([value, label]) => (
@@ -120,14 +123,16 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
                 key={value}
                 type="button"
                 size="sm"
-                variant={bmReportType === value ? "default" : "outline"}
-                onClick={() => setBmReportType(value)}
+                variant={reportType === value ? "default" : "outline"}
+                onClick={() => setReportType(value)}
               >
                 {label}
               </Button>
             ))}
             <p className="w-full text-xs text-muted-foreground">
-              Financial sales = Clearing, kein zweiter Umsatz. orderline_fee wird nicht gebucht.
+              {kind === "amazon"
+                ? "Financial „Bezahlung der Bestellung“ = Clearing, kein zweiter Umsatz. Stornierte Amazon-Bestellungen erzeugen nie SALE."
+                : "Financial sales = Clearing, kein zweiter Umsatz. orderline_fee wird nicht gebucht."}
             </p>
           </CardContent>
         </Card>
@@ -168,13 +173,13 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
             ) : (
               <>
                 <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                <p className="text-sm">CSV hier ablegen oder klicken</p>
+                <p className="text-sm">CSV oder TXT hier ablegen oder klicken</p>
               </>
             )}
             <input
               id={`accrual-file-${kind}`}
               type="file"
-              accept=".csv"
+              accept=".csv,.txt,text/csv,text/plain"
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];

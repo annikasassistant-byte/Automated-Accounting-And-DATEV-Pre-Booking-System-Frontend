@@ -39,10 +39,10 @@ export function AccountingInboxPage() {
     <div className="space-y-6">
       <PageHeader
         title="Buchhaltungs-Posteingang"
-        description="Nur echte Ausnahmen — automatisch abgestimmte Fälle verlassen die Queue"
+        description="Nur echte Ausnahmen — Amazon-Storno ohne SALE; Rechnung ausstehend bleibt offen bis JTL-Rechnung"
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Offene Ausnahmen</CardTitle>
@@ -54,6 +54,14 @@ export function AccountingInboxPage() {
             <CardTitle className="text-base">Wartende Ereignisse</CardTitle>
           </CardHeader>
           <CardContent className="text-3xl font-semibold">{data.pendingEvents.length}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Rechnung ausstehend</CardTitle>
+          </CardHeader>
+          <CardContent className="text-3xl font-semibold">
+            {data.invoicePendingCount ?? data.pendingEvents.filter((e) => e.status === "invoice_pending").length}
+          </CardContent>
         </Card>
         <Card>
           <CardHeader>
