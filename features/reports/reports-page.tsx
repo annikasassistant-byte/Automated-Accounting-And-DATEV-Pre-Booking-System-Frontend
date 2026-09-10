@@ -23,6 +23,7 @@ import {
   useGetAccountTotalsQuery,
   useGetStatusBreakdownQuery,
   useGetExportsQuery,
+  useGetAccrualOverviewQuery,
 } from "@/services/accountingApi";
 
 const CHART_COLORS = [
@@ -39,6 +40,7 @@ export function ReportsPage() {
   const { data: accountTotals = [], isLoading: totalsLoading } = useGetAccountTotalsQuery();
   const { data: statusBreakdown = [], isLoading: breakdownLoading } = useGetStatusBreakdownQuery();
   const { data: exports = [] } = useGetExportsQuery();
+  const { data: accrualOverview } = useGetAccrualOverviewQuery({ from: "2026-07-01", to: "2026-07-31" });
 
   const isLoading = totalsLoading || breakdownLoading;
 
@@ -95,7 +97,7 @@ export function ReportsPage() {
       <PageHeader
         title="Berichte"
         eyebrow="Auswertung"
-        description="Kontensalden, Statusverteilung und Export-Erfolg auf einen Blick."
+        description="Kontensalden, Statusverteilung, Accrual-Umsatz je Marktplatz und offene Entscheidungen."
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -197,6 +199,67 @@ export function ReportsPage() {
           </ChartCard>
         )}
       </div>
+
+      {accrualOverview && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Accrual Juli-Überblick</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            <MetricCard
+              title="Rechnung ausstehend"
+              value={String(accrualOverview.invoicePendingCount)}
+              subtitle="Amazon versendet, JTL-Rechnung fehlt"
+              icon={BarChart3}
+            />
+            <MetricCard
+              title="Stornierungen"
+              value={String(accrualOverview.cancellationsCount)}
+              subtitle="Kein Umsatz"
+              icon={TrendingUp}
+            />
+            <MetricCard
+              title="Offene Entscheidungen"
+              value={String(accrualOverview.decisionsNeeded.length)}
+              subtitle="Inbox + unklassifizierte Kosten"
+              icon={Package}
+            />
+          </div>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left">
+                <tr>
+                  <th className="p-2">Marktplatz</th>
+                  <th className="p-2">Konto</th>
+                  <th className="p-2">Umsatz</th>
+                  <th className="p-2">Erstattungen</th>
+                  <th className="p-2">Erwartete Auszahlung</th>
+                  <th className="p-2">Tatsächliche Auszahlung</th>
+                  <th className="p-2">Differenz</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accrualOverview.revenueByMarketplace.map((row) => (
+                  <tr key={row.marketplace} className="border-t">
+                    <td className="p-2 capitalize">{row.marketplace}</td>
+                    <td className="p-2">{row.revenueAccount}</td>
+                    <td className="p-2">{formatCurrencyPrecise(row.salesCents / 100)}</td>
+                    <td className="p-2">{formatCurrencyPrecise(row.refundsCents / 100)}</td>
+                    <td className="p-2">{formatCurrencyPrecise((row.expectedPayoutCents || 0) / 100)}</td>
+                    <td className="p-2">{formatCurrencyPrecise((row.actualPayoutCents || 0) / 100)}</td>
+                    <td className="p-2">{formatCurrencyPrecise((row.payoutDifferenceCents || 0) / 100)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {accrualOverview.decisionsNeeded.length > 0 && (
+            <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+              {accrualOverview.decisionsNeeded.slice(0, 12).map((d) => (
+                <li key={`${d.kind}-${d.id}`}>{d.title}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

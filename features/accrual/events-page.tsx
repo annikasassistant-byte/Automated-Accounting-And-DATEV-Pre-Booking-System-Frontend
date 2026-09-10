@@ -10,7 +10,7 @@ import {
   useGetAccrualEventsQuery,
   useBuildJournalDraftMutation,
 } from "@/services/accountingApi";
-import { formatDateTime } from "@/lib/format";
+import { formatCurrencyPrecise, formatDateTime } from "@/lib/format";
 import { useAuthStore } from "@/lib/auth-store";
 
 const NON_BOOKABLE = new Set(["ORDER_CREATED", "CANCELLATION"]);
@@ -39,7 +39,7 @@ export function AccrualEventsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Geschäftsvorfälle (Accrual)"
-        description="ORDER_CREATED ≠ Umsatz; Financial sales/revenue = Clearing (SETTLEMENT)"
+        description="Amazon-Status ist führend. ORDER_CREATED ≠ Umsatz; Financial = Clearing. Rechnung ausstehend bleibt offen."
       />
 
       <Card>
@@ -63,6 +63,16 @@ export function AccrualEventsPage() {
                     {ev.marketplaceOrderId || ev.sourceRecordId} ·{" "}
                     {formatDateTime(ev.eventDate)}
                   </p>
+                  {ev.fx?.originalCurrency && (
+                    <p className="text-xs text-muted-foreground">
+                      {ev.fx.originalAmountCents != null
+                        ? formatCurrencyPrecise((ev.fx.originalAmountCents || 0) / 100, ev.fx.originalCurrency)
+                        : null}
+                      {ev.fx.eurAmountCents != null && ev.fx.originalCurrency !== "EUR"
+                        ? ` → ${formatCurrencyPrecise(ev.fx.eurAmountCents / 100)} (${ev.fx.exchangeRateSource || "FX"})`
+                        : null}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={ev.status} />

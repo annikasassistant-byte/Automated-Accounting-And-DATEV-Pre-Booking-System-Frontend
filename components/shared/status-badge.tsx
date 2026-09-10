@@ -32,7 +32,11 @@ type BadgeStatus =
   | "completed"
   | "processing"
   | "draft"
-  | "validated";
+  | "validated"
+  | "invoice_pending"
+  | "pending_match"
+  | "void"
+  | "unmatched";
 
 const styles: Record<string, string> = {
   active: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
@@ -66,6 +70,10 @@ const styles: Record<string, string> = {
   processing: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   draft: "bg-muted text-muted-foreground",
   validated: "bg-sky-500/15 text-sky-700 dark:text-sky-400",
+  invoice_pending: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/20",
+  pending_match: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+  void: "bg-muted text-muted-foreground",
+  unmatched: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
   fingerprint: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
   possible: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   raw_row: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
@@ -104,6 +112,10 @@ const LABELS: Record<string, string> = {
   processing: "Verarbeitung",
   draft: "Entwurf",
   validated: "Validiert",
+  invoice_pending: "Rechnung ausstehend",
+  pending_match: "Match ausstehend",
+  void: "Storniert",
+  unmatched: "Unzugeordnet",
   fingerprint: "Fingerprint",
   possible: "Mögl. Duplikat",
   raw_row: "Rohzeile",

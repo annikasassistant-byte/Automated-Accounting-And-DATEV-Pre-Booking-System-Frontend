@@ -31,6 +31,7 @@ import {
   useAcceptSuggestionMutation,
   useRejectSuggestionMutation,
   useAnalyzePatternsMutation,
+  useSeedLexofficePatternsMutation,
 } from "@/services/accountingApi";
 import { RuleWizardDialog } from "@/features/rules/rule-wizard-dialog";
 
@@ -50,6 +51,7 @@ export function PatternsPage() {
   const [acceptSuggestion] = useAcceptSuggestionMutation();
   const [rejectSuggestion] = useRejectSuggestionMutation();
   const [analyzePatterns, { isLoading: analyzing }] = useAnalyzePatternsMutation();
+  const [seedLexoffice, { isLoading: seedingLex }] = useSeedLexofficePatternsMutation();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PatternAction | "all">("all");
@@ -122,6 +124,21 @@ export function PatternsPage() {
     }
   };
 
+  const handleLexoffice = async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const result = await seedLexoffice(form).unwrap();
+      toast.success(
+        `${result.suggestionsCreated} LexOffice-Vorschläge · ${result.skippedLowConfidence} niedrige Konfidenz offen gelassen`,
+      );
+    } catch (err) {
+      toast.error(
+        (err as { data?: { message?: string } })?.data?.message ?? "LexOffice-Import fehlgeschlagen",
+      );
+    }
+  };
+
   if (isLoading) return <LoadingSkeleton variant="page" />;
 
   return (
@@ -129,12 +146,32 @@ export function PatternsPage() {
       <PageHeader
         title="Muster & Vorschläge"
         eyebrow="KI / Heuristik"
-        description="Wiederkehrende Keyword-Gruppen prüfen und in Regeln überführen."
+        description="Wiederkehrende Keyword-Gruppen prüfen. LexOffice-DATEV erzeugt nur Vorschläge — nie 10001/70002, niedrige Konfidenz bleibt offen."
         action={
-          <Button variant="outline" onClick={handleAnalyze} disabled={analyzing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${analyzing ? "animate-spin" : ""}`} />
-            Analyse starten
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleAnalyze} disabled={analyzing}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${analyzing ? "animate-spin" : ""}`} />
+              Analyse starten
+            </Button>
+            <Button
+              variant="outline"
+              disabled={seedingLex}
+              onClick={() => document.getElementById("lexoffice-datev")?.click()}
+            >
+              LexOffice DATEV
+            </Button>
+            <input
+              id="lexoffice-datev"
+              type="file"
+              accept=".csv,.txt"
+              className="hidden"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (f) await handleLexoffice(f);
+                e.target.value = "";
+              }}
+            />
+          </div>
         }
       />
 
