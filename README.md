@@ -92,7 +92,7 @@ Open [http://localhost:3000](http://localhost:3000) → `/login`.
 
 - **Auth:** `/login`, `/forgot-password`, `/verify-otp`, `/reset-password`, `/unauthorized`
 - **Accounting (cash):** import bank/paypal, transactions, open items, patterns, rules, accounts, DATEV export, duplicates, reconciliation, reports, company settings
-- **Accrual:** JTL + marketplace imports (Amazon Bestellreport `.txt`/CSV + Financial), accounting inbox (`invoice_pending`), business events with ECB/marketplace FX, accrual journal drafts, expected-vs-actual payout recon, July accrual report
+- **Accrual:** JTL + marketplace imports (Amazon Bestellreport `.txt`/CSV + Financial), accounting inbox (`invoice_pending`), business events with ECB/marketplace FX (weekend = last ECB day), accrual journal drafts, expected-vs-actual payout recon, July accrual report. JTL Shop: Backmarket / Refurbed / Amazon or Amazon-ID / `BuyBack (Kaufland.de)` → Kaufland. DATEV category Konten are admin-configurable placeholders.
 - **Admin only:** `/admin/users`, `/admin/settings/clearing`, plus write actions on rules/accounts/company settings and accrual journal posting
 
 ## Coding structure
@@ -185,8 +185,8 @@ Shared Buchhaltung nav (both prefixes): Bank-Import, PayPal-Import, Transaktione
 | `features/import` | `…/import/bank`, `…/import/paypal` | CSV upload, import history, Guthaben check, reprocess |
 | `features/transactions` | `…/transactions`, `?status=open`, `?status=conflict` | List, assign, bulk status, apply-rules, detail drawer, create-rule (admin) |
 | `features/patterns` | `…/patterns` | Analyze + LexOffice DATEV suggestions (HITL; never 10001/70002) |
-| `features/reports` | `…/reports` | Account totals, status breakdown, accrual overview (revenue 81971–73) |
-| `features/accrual` | `…/import/jtl`, `…/import/marketplace/{amazon,backmarket,refurbed}`, `…/accounting-inbox`, `…/accrual/events`, `…/accrual/journal`, `…/reconciliation/marketplace` | Amazon order vs financial; Rechnung ausstehend; expected payout vs actual |
+| `features/reports` | `…/reports` | Account totals, status breakdown, accrual overview (revenue from ClearingConfig placeholders) |
+| `features/accrual` | `…/import/jtl`, `…/import/marketplace/{amazon,backmarket,refurbed}`, `…/accounting-inbox`, `…/accrual/events`, `…/accrual/journal`, `…/reconciliation/marketplace` | Amazon order vs financial; JTL Shop → Amazon/Back Market/refurbed/Kaufland; Rechnung ausstehend; expected payout vs actual |
 | `features/rules` | `…/rules` | CRUD, enable/disable, test, inventory seed (writes admin) |
 | `features/accounts` | `…/accounts`, `…/accounts/overview` | Chart CRUD/seed/CSV, overview + ledger (writes admin) |
 | `features/export` | `…/export` | DATEV preview → validate → create → download |
@@ -208,7 +208,7 @@ Admin-only **writes** (UI + API): rules, accounts seed/CRUD, company/DATEV/syste
 
 - Notification bell in the navbar is **UI-only** (not wired to API/socket notifications)
 - Open/conflict queues mostly use `getTransactions?status=` (dedicated RTK hooks exist but are unused on those screens)
-- Accrual: Amazon Bestellstatus is authoritative (cancel = no SALE); shipped without JTL invoice stays `invoice_pending`; financial lines = clearing; ECB FX (marketplace EUR wins); expected payout vs actual; LexOffice DATEV expense suggestions
+- Accrual: Amazon Bestellstatus is authoritative (cancel = no SALE); shipped without JTL invoice stays `invoice_pending`; financial lines = clearing; ECB FX (marketplace EUR wins; weekend/holiday = last ECB day); JTL Shop mapping includes Kaufland; expected payout vs actual; LexOffice DATEV expense suggestions
 - Accrual → DATEV export **not** in UI yet (cash DATEV unchanged)
 - Fee-invoice monthly control + FX true-up posting still pending
 
