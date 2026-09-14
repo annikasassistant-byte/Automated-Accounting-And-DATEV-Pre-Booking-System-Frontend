@@ -39,7 +39,7 @@ import { downloadAuthenticatedFile } from "@/lib/download";
 import type {
   AccrualImportResult,
   AccrualInbox,
-  AccrualMarketplace,
+  AccrualCsvChannel,
   AccrualOverview,
   AccountingException,
   BusinessEvent,
@@ -619,7 +619,7 @@ export const accountingApi = createApi({
 
     importMarketplace: builder.mutation<
       AccrualImportResult,
-      { channel: AccrualMarketplace; body: FormData; reportType?: "order" | "financial" | "auto" }
+      { channel: AccrualCsvChannel; body: FormData; reportType?: "order" | "financial" | "auto" }
     >({
       query: ({ channel, body, reportType }) => ({
         url: `/imports/marketplace/${channel}`,

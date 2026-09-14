@@ -2,13 +2,13 @@
 
 import { useParams } from "next/navigation";
 import { AccrualImportPage } from "@/features/accrual/accrual-import-page";
-import type { AccrualMarketplace } from "@/types/accrual";
+import type { AccrualCsvChannel } from "@/types/accrual";
 
-const CHANNELS: AccrualMarketplace[] = ["amazon", "backmarket", "refurbed"];
+const CHANNELS: AccrualCsvChannel[] = ["amazon", "backmarket", "refurbed"];
 
 export default function Page() {
   const params = useParams<{ channel: string }>();
-  const channel = (params?.channel || "") as AccrualMarketplace;
+  const channel = (params?.channel || "") as AccrualCsvChannel;
   if (!CHANNELS.includes(channel)) {
     return <p className="text-destructive">Unbekannter Marktplatz-Kanal.</p>;
   }

@@ -1,6 +1,7 @@
-export type AccrualMarketplace = "amazon" | "backmarket" | "refurbed";
+export type AccrualCsvChannel = "amazon" | "backmarket" | "refurbed";
+export type AccrualMarketplace = AccrualCsvChannel | "kaufland";
 
-export type AccrualImportKind = "jtl" | AccrualMarketplace;
+export type AccrualImportKind = "jtl" | AccrualCsvChannel;
 
 export interface AccrualImportResult {
   batch: { _id: string; rowCount?: number; createdCount?: number; duplicateCount?: number };
@@ -70,7 +71,7 @@ export interface AccrualOverview {
   period: { from: string | null; to: string | null };
   revenueByMarketplace: Array<{
     marketplace: string;
-    revenueAccount: string;
+    revenueAccount: string | null;
     salesCents: number;
     salesCount: number;
     refundsCents: number;
@@ -132,8 +133,10 @@ export interface ClearingConfig {
       feeAccount?: string | null;
       refundAccount?: string | null;
       debtorAccount?: string | null;
-      revenueAccount?: string | null;
-      adjustmentAccount?: string | null;
+          revenueAccount?: string | null;
+          adjustmentAccount?: string | null;
+          fxGainAccount?: string | null;
+          fxLossAccount?: string | null;
     }
   >;
 }

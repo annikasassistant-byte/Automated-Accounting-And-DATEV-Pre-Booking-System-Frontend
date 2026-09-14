@@ -13,15 +13,24 @@ import {
 } from "@/services/accountingApi";
 import type { AccrualMarketplace } from "@/types/accrual";
 
-const MARKETPLACES: AccrualMarketplace[] = ["amazon", "backmarket", "refurbed"];
+const MARKETPLACES: AccrualMarketplace[] = ["amazon", "backmarket", "refurbed", "kaufland"];
+
+const MARKETPLACE_LABELS: Record<AccrualMarketplace, string> = {
+  amazon: "Amazon",
+  backmarket: "Back Market",
+  refurbed: "refurbed",
+  kaufland: "Kaufland",
+};
 
 const ACCOUNT_FIELDS = [
-  "revenueAccount",
-  "clearingAccount",
-  "feeAccount",
-  "refundAccount",
-  "debtorAccount",
-  "adjustmentAccount",
+  { key: "revenueAccount", label: "Erlöse" },
+  { key: "feeAccount", label: "Marktplatzgebühren" },
+  { key: "refundAccount", label: "Erstattungen / Stornos" },
+  { key: "clearingAccount", label: "Clearing / Verrechnung" },
+  { key: "debtorAccount", label: "Forderungen / Debitor" },
+  { key: "adjustmentAccount", label: "Anpassungen" },
+  { key: "fxGainAccount", label: "FX-Gewinn (Platzhalter)" },
+  { key: "fxLossAccount", label: "FX-Verlust (Platzhalter)" },
 ] as const;
 
 export function ClearingSettingsPage() {
@@ -63,16 +72,16 @@ export function ClearingSettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Marktplatz-Clearing"
-        description="Separate Erlöskonten pro Marktplatz (Platzhalter bis Steuerberater-Final). Financial sales = Clearing."
+        description="Buchungskategorien (Erlöse, Gebühren, Clearing, Erstattungen) mit DATEV-Platzhaltern. Kontonummern später ohne Logikwechsel änderbar — Steuerberater-Abstimmung ist kein Blocker."
       />
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Standard-Erlöskonto (Fallback)</CardTitle>
+          <CardTitle className="text-base">Standard-Erlöskonto (Fallback-Platzhalter)</CardTitle>
         </CardHeader>
         <CardContent>
           <Input
-            placeholder="z. B. 81973"
+            placeholder="z. B. 81971"
             defaultValue={currentRevenue}
             onChange={(e) => setRevenueDefault(e.target.value)}
           />
@@ -81,17 +90,19 @@ export function ClearingSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">FX-Policy (provisional / true-up)</CardTitle>
+          <CardTitle className="text-base">FX-Regel</CardTitle>
         </CardHeader>
         <CardContent>
           <Input
-            placeholder="Kursquelle/Datum — konfigurierbar, nicht hard-coded"
+            placeholder="ECB-Tageskurs; Wochenende/Feiertag = letzter ECB-Kurs; Marktplatz-EUR hat Vorrang"
             defaultValue={currentFx}
             onChange={(e) => setFxNote(e.target.value)}
           />
           <p className="mt-2 text-xs text-muted-foreground">
-            SEK→EUR provisional speichern; Settlement-True-up als separate FX-Differenz, Originalsale nicht
-            überschreiben.
+            Standard: täglicher ECB-Referenzkurs. Fehlt ein Kurs (Wochenende/Feiertag), gilt der letzte
+            veröffentlichte ECB-Tag. Liefert der Marktplatz den tatsächlichen EUR-Settlement-Betrag oder
+            den verwendeten Kurs, hat dieser Vorrang für Settlement und Clearing. Originalwährung,
+            Originalbetrag, Kurs, Kursdatum, EUR-Betrag und Quelle werden revisionssicher gespeichert.
           </p>
         </CardContent>
       </Card>
@@ -99,18 +110,18 @@ export function ClearingSettingsPage() {
       {MARKETPLACES.map((mp) => (
         <Card key={mp}>
           <CardHeader>
-            <CardTitle className="text-base capitalize">{mp}</CardTitle>
+            <CardTitle className="text-base">{MARKETPLACE_LABELS[mp]}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
             {ACCOUNT_FIELDS.map((field) => (
-              <div key={field}>
-                <label className="mb-1 block text-xs text-muted-foreground">{field}</label>
+              <div key={field.key}>
+                <label className="mb-1 block text-xs text-muted-foreground">{field.label}</label>
                 <Input
-                  defaultValue={(currentAccounts[mp] as Record<string, string> | undefined)?.[field] || ""}
+                  defaultValue={(currentAccounts[mp] as Record<string, string> | undefined)?.[field.key] || ""}
                   onChange={(e) =>
                     setAccounts((prev) => ({
                       ...prev,
-                      [mp]: { ...(prev[mp] || {}), [field]: e.target.value },
+                      [mp]: { ...(prev[mp] || {}), [field.key]: e.target.value },
                     }))
                   }
                 />

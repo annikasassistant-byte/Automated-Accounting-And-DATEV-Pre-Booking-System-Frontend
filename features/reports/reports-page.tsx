@@ -239,7 +239,7 @@ export function ReportsPage() {
               <tbody>
                 {accrualOverview.revenueByMarketplace.map((row) => (
                   <tr key={row.marketplace} className="border-t">
-                    <td className="p-2 capitalize">{row.marketplace}</td>
+                    <td className="p-2 capitalize">{row.marketplace === "backmarket" ? "Back Market" : row.marketplace === "kaufland" ? "Kaufland" : row.marketplace}</td>
                     <td className="p-2">{row.revenueAccount}</td>
                     <td className="p-2">{formatCurrencyPrecise(row.salesCents / 100)}</td>
                     <td className="p-2">{formatCurrencyPrecise(row.refundsCents / 100)}</td>
