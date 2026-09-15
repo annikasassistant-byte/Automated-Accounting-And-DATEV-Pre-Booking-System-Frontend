@@ -610,6 +610,40 @@ export const accountingApi = createApi({
       providesTags: ["Reports", "Accrual"],
     }),
 
+    getAmazonJtlAbgleich: builder.query<
+      {
+        amazonOrderCount: number;
+        amazonProductCents: number;
+        jtlAmazonCount: number;
+        matchedCount: number;
+        amazonOnlyCount: number;
+        jtlOnlyCount: number;
+        matched: Array<{ amazonOrderId: string; amazonCents: number; jtlCents: number; diffCents: number; status: string }>;
+        note?: string;
+        period: { from: string | null; to: string | null };
+      },
+      { from?: string; to?: string } | void
+    >({
+      query: (args) => ({
+        url: "/reports/amazon-jtl-abgleich",
+        params: { from: args?.from, to: args?.to },
+      }),
+      transformResponse: (r: ApiSuccess<any>) => r.data,
+      providesTags: ["Reports", "Accrual"],
+    }),
+
+    getAccrualDatevPreview: builder.query<
+      { rowCount: number; rows: Array<Record<string, unknown>>; note?: string },
+      { from?: string; to?: string } | void
+    >({
+      query: (args) => ({
+        url: "/accrual/journal/datev-preview",
+        params: { from: args?.from, to: args?.to },
+      }),
+      transformResponse: (r: ApiSuccess<any>) => r.data,
+      providesTags: ["Accrual"],
+    }),
+
     // ──────────── Accrual ────────────
     importJtl: builder.mutation<AccrualImportResult, FormData>({
       query: (body) => ({ url: "/imports/jtl", method: "POST", body }),
@@ -802,6 +836,9 @@ export const {
   useGetAccountTotalsQuery,
   useGetStatusBreakdownQuery,
   useGetAccrualOverviewQuery,
+  useGetAmazonJtlAbgleichQuery,
+  useGetAccrualDatevPreviewQuery,
+  useLazyGetAccrualDatevPreviewQuery,
   // Accrual
   useImportJtlMutation,
   useImportMarketplaceMutation,

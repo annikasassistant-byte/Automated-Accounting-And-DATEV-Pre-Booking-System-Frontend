@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
@@ -12,12 +13,19 @@ import {
 } from "@/services/accountingApi";
 import { formatCurrencyPrecise, formatDateTime } from "@/lib/format";
 import { useAuthStore } from "@/lib/auth-store";
+import { ACCRUAL_PERIODS, DEFAULT_ACCRUAL_PERIOD, type AccrualPeriodId } from "@/lib/accounting/accrual-period";
 
 const NON_BOOKABLE = new Set(["ORDER_CREATED", "CANCELLATION"]);
 
 export function AccrualEventsPage() {
   const isAdmin = useAuthStore((s) => s.hasRole("admin"));
-  const { data, isLoading } = useGetAccrualEventsQuery({ limit: 50 });
+  const [periodId, setPeriodId] = useState<AccrualPeriodId>(DEFAULT_ACCRUAL_PERIOD.id);
+  const period = ACCRUAL_PERIODS.find((p) => p.id === periodId) ?? DEFAULT_ACCRUAL_PERIOD;
+  const { data, isLoading } = useGetAccrualEventsQuery({
+    limit: 200,
+    from: period.from,
+    to: period.to,
+  });
   const [buildDraft, { isLoading: building }] = useBuildJournalDraftMutation();
 
   const events = data?.items ?? [];
@@ -41,6 +49,20 @@ export function AccrualEventsPage() {
         title="Geschäftsvorfälle (Accrual)"
         description="Amazon-Status ist führend. ORDER_CREATED ≠ Umsatz; Financial = Clearing. Rechnung ausstehend bleibt offen."
       />
+
+      <div className="flex flex-wrap gap-2">
+        {ACCRUAL_PERIODS.map((p) => (
+          <Button
+            key={p.id}
+            type="button"
+            size="sm"
+            variant={periodId === p.id ? "default" : "outline"}
+            onClick={() => setPeriodId(p.id)}
+          >
+            {p.label}
+          </Button>
+        ))}
+      </div>
 
       <Card>
         <CardHeader>

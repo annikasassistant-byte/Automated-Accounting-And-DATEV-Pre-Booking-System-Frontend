@@ -34,11 +34,11 @@ import {
   useGetPaypalBalanceQuery,
 } from "@/services/accountingApi";
 
-const JULY = { from: "2026-07-01", to: "2026-07-31" };
+import { ACCRUAL_PERIODS, DEFAULT_ACCRUAL_PERIOD } from "@/lib/accounting/accrual-period";
 
 export function ReconciliationPage() {
-  const [from, setFrom] = useState(JULY.from);
-  const [to, setTo] = useState(JULY.to);
+  const [from, setFrom] = useState(DEFAULT_ACCRUAL_PERIOD.from);
+  const [to, setTo] = useState(DEFAULT_ACCRUAL_PERIOD.to);
   const [paypalImportId, setPaypalImportId] = useState<string>("");
 
   const period = useMemo(() => ({ from: from || undefined, to: to || undefined }), [from, to]);
@@ -93,6 +93,22 @@ export function ReconciliationPage() {
           <CardTitle className="text-base">Buchungszeitraum</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="flex w-full flex-wrap gap-2">
+            {ACCRUAL_PERIODS.map((p) => (
+              <Button
+                key={p.id}
+                type="button"
+                size="sm"
+                variant={from === p.from && to === p.to ? "default" : "outline"}
+                onClick={() => {
+                  setFrom(p.from);
+                  setTo(p.to);
+                }}
+              >
+                {p.label}
+              </Button>
+            ))}
+          </div>
           <div className="w-full space-y-1 sm:w-auto">
             <Label htmlFor="from">Von</Label>
             <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -101,16 +117,6 @@ export function ReconciliationPage() {
             <Label htmlFor="to">Bis</Label>
             <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
-          <Button
-            variant="outline"
-            className="min-h-11 w-full sm:w-auto"
-            onClick={() => {
-              setFrom(JULY.from);
-              setTo(JULY.to);
-            }}
-          >
-            Juli 2026
-          </Button>
           <Button variant="outline" className="min-h-11 w-full sm:w-auto" onClick={() => void refetch()}>
             Aktualisieren
           </Button>
