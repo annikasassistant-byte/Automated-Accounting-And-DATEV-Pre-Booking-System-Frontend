@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -18,13 +18,16 @@ import { PageHeader } from "@/components/shared/page-header";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { Button } from "@/components/ui/button";
 import { formatCurrencyPrecise, formatPercent } from "@/lib/format";
 import {
   useGetAccountTotalsQuery,
   useGetStatusBreakdownQuery,
   useGetExportsQuery,
   useGetAccrualOverviewQuery,
+  useGetAmazonJtlAbgleichQuery,
 } from "@/services/accountingApi";
+import { ACCRUAL_PERIODS, DEFAULT_ACCRUAL_PERIOD, type AccrualPeriodId } from "@/lib/accounting/accrual-period";
 
 const CHART_COLORS = [
   "var(--chart-1)",
@@ -37,10 +40,13 @@ const CHART_COLORS = [
 const ACCOUNT_HIGHLIGHTS = ["3220", "1361", "81971", "81972", "81973", "81974", "81975", "81976", "4910", "1201", "1203"];
 
 export function ReportsPage() {
+  const [periodId, setPeriodId] = useState<AccrualPeriodId>(DEFAULT_ACCRUAL_PERIOD.id);
+  const period = ACCRUAL_PERIODS.find((p) => p.id === periodId) ?? DEFAULT_ACCRUAL_PERIOD;
   const { data: accountTotals = [], isLoading: totalsLoading } = useGetAccountTotalsQuery();
   const { data: statusBreakdown = [], isLoading: breakdownLoading } = useGetStatusBreakdownQuery();
   const { data: exports = [] } = useGetExportsQuery();
-  const { data: accrualOverview } = useGetAccrualOverviewQuery({ from: "2026-07-01", to: "2026-07-31" });
+  const { data: accrualOverview } = useGetAccrualOverviewQuery({ from: period.from, to: period.to });
+  const { data: abgleich } = useGetAmazonJtlAbgleichQuery({ from: period.from, to: period.to });
 
   const isLoading = totalsLoading || breakdownLoading;
 
@@ -97,8 +103,22 @@ export function ReportsPage() {
       <PageHeader
         title="Berichte"
         eyebrow="Auswertung"
-        description="Kontensalden, Statusverteilung, Accrual-Umsatz je Marktplatz und offene Entscheidungen."
+        description="Kontensalden, Statusverteilung, Accrual-Umsatz je Marktplatz und Amazon/JTL-Gegencheck."
       />
+
+      <div className="flex flex-wrap gap-2">
+        {ACCRUAL_PERIODS.map((p) => (
+          <Button
+            key={p.id}
+            type="button"
+            size="sm"
+            variant={periodId === p.id ? "default" : "outline"}
+            onClick={() => setPeriodId(p.id)}
+          >
+            {p.label}
+          </Button>
+        ))}
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <MetricCard
@@ -202,7 +222,7 @@ export function ReportsPage() {
 
       {accrualOverview && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Accrual Juli-Überblick</h2>
+          <h2 className="text-lg font-semibold">Accrual-Überblick ({period.label})</h2>
           <div className="grid gap-4 md:grid-cols-3">
             <MetricCard
               title="Rechnung ausstehend"
@@ -258,6 +278,27 @@ export function ReportsPage() {
               ))}
             </ul>
           )}
+        </div>
+      )}
+
+      {abgleich && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">Amazon / JTL Gegencheck ({period.label})</h2>
+          <p className="text-sm text-muted-foreground">{abgleich.note}</p>
+          <div className="grid gap-4 md:grid-cols-4">
+            <MetricCard title="Amazon-Bestellungen" value={String(abgleich.amazonOrderCount)} icon={BarChart3} />
+            <MetricCard
+              title="Amazon EUR (Ereignisse)"
+              value={formatCurrencyPrecise(abgleich.amazonProductCents / 100)}
+              icon={TrendingUp}
+            />
+            <MetricCard title="Zugeordnet" value={String(abgleich.matchedCount)} icon={Package} />
+            <MetricCard
+              title="Nur Amazon / nur JTL"
+              value={`${abgleich.amazonOnlyCount} / ${abgleich.jtlOnlyCount}`}
+              icon={Truck}
+            />
+          </div>
         </div>
       )}
     </div>

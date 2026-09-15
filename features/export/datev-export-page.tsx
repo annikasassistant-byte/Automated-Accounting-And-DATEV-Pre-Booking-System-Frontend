@@ -37,6 +37,8 @@ import {
   useGetDatevSettingsQuery,
 } from "@/services/accountingApi";
 import type { DatevExportJob } from "@/types/accounting";
+import { useAuthStore } from "@/lib/auth-store";
+import { DEFAULT_ACCRUAL_PERIOD } from "@/lib/accounting/accrual-period";
 
 type Period = DatevExportJob["period"];
 
@@ -72,14 +74,15 @@ function rangeForPeriod(period: Period, customFrom: string, customTo: string) {
 export function DatevExportPage() {
   const { data: exports = [], isLoading: exportsLoading } = useGetExportsQuery();
   const { data: datev } = useGetDatevSettingsQuery();
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
   const [previewExport] = usePreviewExportMutation();
   const [validateExport] = useValidateExportMutation();
   const [createExport, { isLoading: creating }] = useCreateExportMutation();
   const [downloadExport] = useDownloadExportMutation();
 
   const [period, setPeriod] = useState<Period>("monthly");
-  const [customFrom, setCustomFrom] = useState("2026-07-01");
-  const [customTo, setCustomTo] = useState("2026-07-31");
+  const [customFrom, setCustomFrom] = useState(DEFAULT_ACCRUAL_PERIOD.from);
+  const [customTo, setCustomTo] = useState(DEFAULT_ACCRUAL_PERIOD.to);
   const [preview, setPreview] = useState<{
     transactionCount: number;
     total: number;
@@ -160,12 +163,18 @@ export function DatevExportPage() {
       <PageHeader
         title="DATEV Export"
         eyebrow="Export"
-        description="Zeitraum wählen, validieren und EXTF-Buchungsstapel herunterladen."
+        description={
+          isAdmin
+            ? "Zeitraum wählen, validieren und EXTF-Buchungsstapel herunterladen. Erzeugen sperrt Cash-Transaktionen."
+            : "Zeitraum wählen und Vorschau/Validierung prüfen. DATEV CSV erzeugen ist nur für Admins."
+        }
         action={
-          <Button onClick={handleGenerate} disabled={creating} className="min-h-11 w-full sm:w-auto">
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            DATEV CSV erzeugen
-          </Button>
+          isAdmin ? (
+            <Button onClick={handleGenerate} disabled={creating} className="min-h-11 w-full sm:w-auto">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              DATEV CSV erzeugen
+            </Button>
+          ) : undefined
         }
       />
 

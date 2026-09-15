@@ -19,7 +19,7 @@ const META: Record<
   AccrualImportKind,
   { title: string; eyebrow: string; importSource: string }
 > = {
-  jtl: { title: "JTL-CSV Import", eyebrow: "JTL", importSource: "jtl" },
+  jtl: { title: "JTL Import (CSV / Excel)", eyebrow: "JTL", importSource: "jtl" },
   amazon: { title: "Amazon Marktplatz-Import", eyebrow: "Amazon", importSource: "marketplace_amazon" },
   backmarket: {
     title: "Back Market Marktplatz-Import",
@@ -61,8 +61,18 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
 
   const processFile = async (f: File) => {
     const lower = f.name.toLowerCase();
-    if (!lower.endsWith(".csv") && !lower.endsWith(".txt")) {
-      toast.error("Nur CSV- oder TXT-Dateien werden unterstützt");
+    const isExcel = lower.endsWith(".xlsx") || lower.endsWith(".xls");
+    if (kind === "jtl") {
+      if (!lower.endsWith(".csv") && !lower.endsWith(".txt") && !lower.endsWith(".xlsx")) {
+        toast.error(
+          lower.endsWith(".xls")
+            ? "Alte .xls-Dateien werden nicht unterstützt — bitte als .xlsx oder CSV speichern"
+            : "JTL: CSV, TXT oder Excel (.xlsx)",
+        );
+        return;
+      }
+    } else if (isExcel || (!lower.endsWith(".csv") && !lower.endsWith(".txt"))) {
+      toast.error("Marktplatz-Importe nur als CSV oder TXT");
       return;
     }
     setPhase("uploading");
@@ -102,9 +112,25 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
             ? "Bestellreport (Status ist führend: Storno = kein Umsatz; Versand ohne Rechnung = Rechnung ausstehend) oder Financial/Settlement (Clearing, kein Umsatz)"
             : kind === "backmarket"
               ? "Order Report (kein Umsatz) oder Financial/Settlement (Clearing/Fees) — getrennt wählen"
-              : `${meta.eyebrow}-CSV hochladen und verarbeiten`
+              : kind === "jtl"
+                ? "Zwei Dateien nacheinander: zuerst Aufträge (Shop-Spalte), danach Rechnungen. Excel .xlsx und CSV. Leeres Shop ≠ Amazon. Prüfen bleibt Prüfung, kein Amazon."
+                : `${meta.eyebrow}-CSV hochladen und verarbeiten`
         }
       />
+
+      {kind === "jtl" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Zwei-Datei-Ablauf</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm text-muted-foreground">
+            <p>1. Zuerst Aufträge (Shop / Kanal), dann Rechnungen (oft ohne Shop — Kanal wird nachgezogen).</p>
+            <p>2. Spalte Marktplatz wird gelesen, wenn vorhanden. Leeres Shop ist nicht Amazon.</p>
+            <p>3. Kanal „Prüfen“ bleibt zur Prüfung — nie Amazon, auch bei Amazon-Bestellnummer.</p>
+            <p>4. Korrektur mit Bezugsrechnung erzeugt eine Ausnahme, keinen zweiten SALE.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {(kind === "backmarket" || kind === "amazon") && (
         <Card>
@@ -173,13 +199,21 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
             ) : (
               <>
                 <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
-                <p className="text-sm">CSV oder TXT hier ablegen oder klicken</p>
+                <p className="text-sm">
+                  {kind === "jtl"
+                    ? "CSV, TXT oder Excel (.xlsx) hier ablegen oder klicken"
+                    : "CSV oder TXT hier ablegen oder klicken"}
+                </p>
               </>
             )}
             <input
               id={`accrual-file-${kind}`}
               type="file"
-              accept=".csv,.txt,text/csv,text/plain"
+              accept={
+                kind === "jtl"
+                  ? ".csv,.txt,.xlsx,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                  : ".csv,.txt,text/csv,text/plain"
+              }
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0];

@@ -32,11 +32,11 @@ import {
   useGetAccountsOverviewQuery,
 } from "@/services/accountingApi";
 
-const JULY = { from: "2026-07-01", to: "2026-07-31" };
+import { DEFAULT_ACCRUAL_PERIOD } from "@/lib/accounting/accrual-period";
 
 export function AccountOverviewPage() {
-  const [from, setFrom] = useState(JULY.from);
-  const [to, setTo] = useState(JULY.to);
+  const [from, setFrom] = useState(DEFAULT_ACCRUAL_PERIOD.from);
+  const [to, setTo] = useState(DEFAULT_ACCRUAL_PERIOD.to);
   const [includeEmpty, setIncludeEmpty] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
