@@ -151,8 +151,10 @@ export function AccountsPage() {
         toast.success("Konto angelegt");
       }
       setDialogOpen(false);
-    } catch {
-      toast.error("Fehler beim Speichern");
+    } catch (err) {
+      toast.error(
+        (err as { data?: { message?: string } })?.data?.message ?? "Fehler beim Speichern",
+      );
     }
   };
 

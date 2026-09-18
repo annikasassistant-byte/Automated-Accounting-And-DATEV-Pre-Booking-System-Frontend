@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   useGetAccrualEventsQuery,
   useBuildJournalDraftMutation,
+  usePatchAccrualEventMutation,
 } from "@/services/accountingApi";
 import { formatCurrencyPrecise, formatDateTime } from "@/lib/format";
 import { useAuthStore } from "@/lib/auth-store";
@@ -27,6 +28,7 @@ export function AccrualEventsPage() {
     to: period.to,
   });
   const [buildDraft, { isLoading: building }] = useBuildJournalDraftMutation();
+  const [patchEvent] = usePatchAccrualEventMutation();
 
   const events = data?.items ?? [];
 
@@ -98,6 +100,31 @@ export function AccrualEventsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={ev.status} />
+                  {isAdmin && ev.eventType === "FEE" && (
+                    <select
+                      className="h-9 rounded-md border bg-transparent px-2 text-xs"
+                      defaultValue={ev.feeVatTreatment || "auto"}
+                      onChange={async (e) => {
+                        try {
+                          await patchEvent({
+                            id: ev._id,
+                            feeVatTreatment: e.target.value as NonNullable<typeof ev.feeVatTreatment>,
+                          }).unwrap();
+                          toast.success("Fee VAT exception saved");
+                        } catch (err) {
+                          toast.error(
+                            (err as { data?: { message?: string } })?.data?.message ??
+                              "VAT override failed",
+                          );
+                        }
+                      }}
+                    >
+                      <option value="auto">VAT auto</option>
+                      <option value="reverse_charge_13b">§13b RC</option>
+                      <option value="input_vat_de">DE input VAT</option>
+                      <option value="none">No VAT</option>
+                    </select>
+                  )}
                   {isAdmin &&
                     ev.status === "matched" &&
                     !NON_BOOKABLE.has(ev.eventType) && (

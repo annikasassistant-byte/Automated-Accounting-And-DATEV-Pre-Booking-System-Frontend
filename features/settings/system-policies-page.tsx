@@ -38,7 +38,7 @@ const ENABLE_LABELS: { key: keyof SystemPolicyEnabled; label: string; hint: stri
   { key: "s10CommercialVatPark", label: "S10 USt/Lieferant parkieren", hint: "Gewerbliche Hinweise → Open" },
   { key: "s11OwnerRelatedPark", label: "S11 Eigentümer parkieren", hint: "Privatentnahme/Inhaber → Open" },
   { key: "s12ForbiddenCollectives", label: "S12 Sammelkonten verbieten", hint: "LexOffice 10001/70002 blockieren" },
-  { key: "s15Inventory", label: "S15 Inventar-Gegenkonto", hint: "Gegenkonto bei Inventarkonto anpassen" },
+  { key: "s15Inventory", label: "S15 Inventar / §25a", hint: "Private Verkäufe → 3349 ohne Vorsteuer, Kennzeichnung Differenzbesteuerung" },
 ];
 
 export function SystemPoliciesPage() {
@@ -169,7 +169,7 @@ export function SystemPoliciesPage() {
               ["bank", "Bankkonto"],
               ["paypal", "PayPal-Konto"],
               ["clearing", "Verrechnung (Clearing)"],
-              ["privateInventory", "Privat Inventar"],
+              ["privateInventory", "Wareneingang ohne Vorsteuerabzug (§25a)"],
             ] as const
           ).map(([key, label]) => (
             <div key={key} className="space-y-2">

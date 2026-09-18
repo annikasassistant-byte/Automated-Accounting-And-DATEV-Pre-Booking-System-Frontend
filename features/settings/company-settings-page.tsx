@@ -274,7 +274,7 @@ export function CompanySettingsPage() {
                   Kontenplan
                 </CardTitle>
                 <CardDescription>
-                  Konten (z. B. 3220, 1361, 4910) unter Stammdaten → Kontenplan
+                  Konten (z. B. 3349, 1361, 4910) unter Stammdaten → Kontenplan
                   pflegen. Der hier gewählte Kontenrahmen ({datevForm.chartOfAccounts || "—"}) sollte
                   zum DATEV-Mandanten passen.
                 </CardDescription>
