@@ -37,7 +37,7 @@ const CHART_COLORS = [
   "var(--chart-5)",
 ];
 
-const ACCOUNT_HIGHLIGHTS = ["3220", "1361", "81971", "81972", "81973", "81974", "81975", "81976", "4910", "1201", "1203"];
+const ACCOUNT_HIGHLIGHTS = ["3349", "1361", "81971", "81972", "81973", "81974", "81975", "81976", "4910", "1201", "1203", "1576", "1577", "1787"];
 
 export function ReportsPage() {
   const [periodId, setPeriodId] = useState<AccrualPeriodId>(DEFAULT_ACCRUAL_PERIOD.id);
@@ -201,7 +201,7 @@ export function ReportsPage() {
         </ChartCard>
 
         {highlightedTotals.length > 2 && (
-          <ChartCard title="Schwerpunkt-Konten" description="3220, 1361, 81971–81976, 4910, 1201, 1203">
+          <ChartCard title="Schwerpunkt-Konten" description="3349, 1361, 81971–81976, 1577/1787 §13b, 4910, 1201, 1203">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={highlightedTotals.map((t) => ({

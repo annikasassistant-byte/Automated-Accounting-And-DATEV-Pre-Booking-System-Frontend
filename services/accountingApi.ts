@@ -711,6 +711,44 @@ export const accountingApi = createApi({
       invalidatesTags: [{ type: "Accrual", id: "clearing" }],
     }),
 
+    getFeeVatPreview: builder.query<
+      {
+        period: { from: string | null; to: string | null };
+        summaries: Array<{
+          marketplace: string;
+          treatment: string;
+          feeNetCents: number;
+          vatCents: number;
+          eventCount: number;
+        }>;
+        example?: {
+          sampleFeeNetCents: number;
+          sampleVatCents: number;
+          reverseChargeFeeNetCents: number;
+          reverseChargeVatCents: number;
+          note: string;
+        };
+      },
+      { from?: string; to?: string }
+    >({
+      query: (params) => ({ url: "/accrual/vat/fee-preview", params }),
+      transformResponse: (r: ApiSuccess<any>) => r.data,
+      providesTags: ["Accrual", "Reports"],
+    }),
+
+    patchAccrualEvent: builder.mutation<
+      BusinessEvent,
+      { id: string; feeVatTreatment: BusinessEvent["feeVatTreatment"] }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/accrual/events/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      transformResponse: (r: ApiSuccess<BusinessEvent>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
     getAccrualJournal: builder.query<Paginated<JournalEntry>, Record<string, string | undefined>>({
       query: (params) => ({ url: "/accrual/journal", params }),
       transformResponse: (r: ApiSuccess<JournalEntry[]>) => paginatedFromApi(r),
@@ -848,6 +886,8 @@ export const {
   useResolveAccrualExceptionMutation,
   useGetClearingConfigQuery,
   useUpdateClearingConfigMutation,
+  useGetFeeVatPreviewQuery,
+  usePatchAccrualEventMutation,
   useGetAccrualJournalQuery,
   useBuildJournalDraftMutation,
   usePostAccrualJournalMutation,

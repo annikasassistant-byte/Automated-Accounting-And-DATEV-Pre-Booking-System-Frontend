@@ -33,6 +33,7 @@ export interface BusinessEvent {
   source: string;
   sourceRecordId: string;
   fx?: BusinessEventFx | null;
+  feeVatTreatment?: "auto" | "reverse_charge_13b" | "input_vat_de" | "none";
 }
 
 export interface AccountingException {
@@ -122,10 +123,18 @@ export interface JournalLine {
   bookingText: string;
 }
 
+export interface FeeVatMarketplaceConfig {
+  treatment?: "reverse_charge_13b" | "input_vat_de" | "none";
+  ratePercent?: number;
+  inputVatAccount?: string | null;
+  outputVatAccount?: string | null;
+}
+
 export interface ClearingConfig {
   revenueAccountDefault?: string | null;
   fxPolicyNote?: string;
   provisionalFxEnabled?: boolean;
+  feeVat?: Record<string, FeeVatMarketplaceConfig>;
   marketplaces?: Record<
     string,
     {
