@@ -38,8 +38,8 @@ const ACCOUNT_FIELDS = [
   { key: "clearingAccount", label: "Clearing / Verrechnung" },
   { key: "debtorAccount", label: "Forderungen / Debitor" },
   { key: "adjustmentAccount", label: "Anpassungen" },
-  { key: "fxGainAccount", label: "FX-Gewinn (Platzhalter)" },
-  { key: "fxLossAccount", label: "FX-Verlust (Platzhalter)" },
+  { key: "fxGainAccount", label: "FX-Gewinnkonto" },
+  { key: "fxLossAccount", label: "FX-Verlustkonto" },
 ] as const;
 
 export function ClearingSettingsPage() {
@@ -51,6 +51,7 @@ export function ClearingSettingsPage() {
   });
   const [revenueDefault, setRevenueDefault] = useState("");
   const [fxNote, setFxNote] = useState("");
+  const [provisionalFx, setProvisionalFx] = useState<boolean | null>(null);
   const [accounts, setAccounts] = useState<Record<string, Record<string, string>>>({});
   const [feeVat, setFeeVat] = useState<Record<string, string>>({});
 
@@ -59,6 +60,8 @@ export function ClearingSettingsPage() {
   const currentRevenue = revenueDefault || data?.revenueAccountDefault || "";
   const currentFx = fxNote || data?.fxPolicyNote || "";
   const currentAccounts = data?.marketplaces || {};
+  const provisionalFxEnabled =
+    provisionalFx ?? data?.provisionalFxEnabled ?? true;
 
   const save = async () => {
     try {
@@ -80,6 +83,7 @@ export function ClearingSettingsPage() {
       await update({
         revenueAccountDefault: currentRevenue || null,
         fxPolicyNote: currentFx,
+        provisionalFxEnabled,
         marketplaces,
         feeVat: feeVatPatch,
       }).unwrap();
@@ -115,17 +119,27 @@ export function ClearingSettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">FX-Regel</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <Input
             placeholder="ECB-Tageskurs; Wochenende/Feiertag = letzter ECB-Kurs; Marktplatz-EUR hat Vorrang"
             defaultValue={currentFx}
             onChange={(e) => setFxNote(e.target.value)}
           />
-          <p className="mt-2 text-xs text-muted-foreground">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={provisionalFxEnabled}
+              onChange={(e) => setProvisionalFx(e.target.checked)}
+            />
+            Provisorisches FX aktiv (provisionalFxEnabled) — nötig für FX-Nachbuchung
+          </label>
+          <p className="text-xs text-muted-foreground">
             Standard: täglicher ECB-Referenzkurs. Fehlt ein Kurs (Wochenende/Feiertag), gilt der letzte
             veröffentlichte ECB-Tag. Liefert der Marktplatz den tatsächlichen EUR-Settlement-Betrag oder
             den verwendeten Kurs, hat dieser Vorrang für Settlement und Clearing. Originalwährung,
             Originalbetrag, Kurs, Kursdatum, EUR-Betrag und Quelle werden revisionssicher gespeichert.
+            FX-Gewinn-/Verlustkonten je Marktplatz siehe Felder unten.
           </p>
         </CardContent>
       </Card>

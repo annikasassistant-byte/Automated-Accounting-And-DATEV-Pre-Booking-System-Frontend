@@ -24,6 +24,7 @@ import {
   Inbox,
   BookMarked,
   Coins,
+  Percent,
 } from "lucide-react";
 
 export interface NavItem {
@@ -78,6 +79,7 @@ export const adminNavGroups: NavGroup[] = [
     items: [
       { title: "Unternehmen", href: "/admin/settings/company", icon: Building2 },
       { title: "Marktplatz-Clearing", href: "/admin/settings/clearing", icon: Store },
+      { title: "Steuerschlüssel", href: "/admin/accrual/tax-codes", icon: Percent },
       { title: "Systemrichtlinien", href: "/admin/settings/system-policies", icon: Shield },
       { title: "Einstellungen", href: "/admin/settings", icon: Settings },
       { title: "Profil", href: "/admin/profile", icon: User },

@@ -41,12 +41,23 @@ import type {
   AccrualInbox,
   AccrualCsvChannel,
   AccrualOverview,
+  AccrualDatevJob,
+  AccrualDatevPreviewResult,
+  AccrualDatevValidateResult,
+  AccrualMonthPack,
   AccountingException,
+  AmazonOnlyClassification,
+  BulkResolveExceptionsResult,
   BusinessEvent,
   ClearingConfig,
+  FxTrueUpResult,
+  JournalBulkBuildResult,
+  JournalBulkPostResult,
   JournalEntry,
   JournalLine,
+  PeriodCoverage,
   PayoutOverviewRow,
+  TaxCode,
 } from "@/types/accrual";
 
 type Paginated<T> = { items: T[]; meta?: { page?: number; limit?: number; total?: number } };
@@ -209,6 +220,24 @@ export const accountingApi = createApi({
           conflictCount: number;
         },
       invalidatesTags: ["Imports", "Transactions", "Reconciliation", "Duplicates", "Ledger"],
+    }),
+
+    failImport: builder.mutation<ImportBatch, { id: string; reason?: string }>({
+      query: ({ id, reason }) => ({
+        url: `/imports/${id}/fail`,
+        method: "POST",
+        body: reason ? { reason } : {},
+      }),
+      transformResponse: (r: ApiSuccess<ServerImportBatch>) => importBatchFromServer(r.data),
+      invalidatesTags: ["Imports", "Accrual"],
+    }),
+
+    retryImport: builder.mutation<{ reuploadRequired: boolean }, { id: string }>({
+      query: ({ id }) => ({ url: `/imports/${id}/retry`, method: "POST" }),
+      transformResponse: (r: ApiSuccess<{ reuploadRequired?: boolean }>) => ({
+        reuploadRequired: Boolean(r.data?.reuploadRequired ?? true),
+      }),
+      invalidatesTags: ["Imports", "Accrual"],
     }),
 
     // ──────────── Transactions ────────────
@@ -619,6 +648,12 @@ export const accountingApi = createApi({
         amazonOnlyCount: number;
         jtlOnlyCount: number;
         matched: Array<{ amazonOrderId: string; amazonCents: number; jtlCents: number; diffCents: number; status: string }>;
+        amazonOnly?: Array<{
+          amazonOrderId: string;
+          amazonCents: number;
+          classification: AmazonOnlyClassification;
+        }>;
+        jtlOnly?: Array<{ amazonOrderId: string; jtlCents: number }>;
         note?: string;
         period: { from: string | null; to: string | null };
       },
@@ -629,6 +664,24 @@ export const accountingApi = createApi({
         params: { from: args?.from, to: args?.to },
       }),
       transformResponse: (r: ApiSuccess<any>) => r.data,
+      providesTags: ["Reports", "Accrual"],
+    }),
+
+    getAccrualMonthPack: builder.query<AccrualMonthPack, { from?: string; to?: string } | void>({
+      query: (args) => ({
+        url: "/reports/accrual-month-pack",
+        params: { from: args?.from, to: args?.to },
+      }),
+      transformResponse: (r: ApiSuccess<AccrualMonthPack>) => r.data,
+      providesTags: ["Reports", "Accrual"],
+    }),
+
+    getAccrualPeriodCoverage: builder.query<PeriodCoverage, { from?: string; to?: string } | void>({
+      query: (args) => ({
+        url: "/accrual/period-coverage",
+        params: { from: args?.from, to: args?.to },
+      }),
+      transformResponse: (r: ApiSuccess<PeriodCoverage>) => r.data,
       providesTags: ["Reports", "Accrual"],
     }),
 
@@ -696,6 +749,19 @@ export const accountingApi = createApi({
         body,
       }),
       transformResponse: (r: ApiSuccess<AccountingException>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    bulkResolveAccrualExceptions: builder.mutation<
+      BulkResolveExceptionsResult,
+      { ids: string[]; status: "resolved" | "dismissed"; note?: string }
+    >({
+      query: (body) => ({
+        url: "/accrual/exceptions/bulk-resolve",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (r: ApiSuccess<BulkResolveExceptionsResult>) => r.data,
       invalidatesTags: ["Accrual"],
     }),
 
@@ -776,6 +842,81 @@ export const accountingApi = createApi({
       invalidatesTags: ["Accrual"],
     }),
 
+    bulkBuildAccrualJournal: builder.mutation<JournalBulkBuildResult, { from: string; to: string }>({
+      query: (body) => ({ url: "/accrual/journal/bulk-build", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<JournalBulkBuildResult>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    bulkPostAccrualJournal: builder.mutation<JournalBulkPostResult, { from: string; to: string }>({
+      query: (body) => ({ url: "/accrual/journal/bulk-post", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<JournalBulkPostResult>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    fxTrueUpEvent: builder.mutation<FxTrueUpResult, { eventId: string }>({
+      query: ({ eventId }) => ({
+        url: `/accrual/fx-true-up/${eventId}`,
+        method: "POST",
+      }),
+      transformResponse: (r: ApiSuccess<FxTrueUpResult>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    fxTrueUpPeriod: builder.mutation<FxTrueUpResult, { from: string; to: string }>({
+      query: (body) => ({ url: "/accrual/fx-true-up/period", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<FxTrueUpResult>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    previewAccrualDatevExport: builder.mutation<AccrualDatevPreviewResult, { from: string; to: string }>({
+      query: (body) => ({ url: "/accrual/datev/preview", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<AccrualDatevPreviewResult>) => r.data,
+    }),
+
+    validateAccrualDatevExport: builder.mutation<AccrualDatevValidateResult, { from: string; to: string }>({
+      query: (body) => ({ url: "/accrual/datev/validate", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<AccrualDatevValidateResult>) => r.data,
+    }),
+
+    createAccrualDatevExport: builder.mutation<AccrualDatevJob, { from: string; to: string }>({
+      query: (body) => ({ url: "/accrual/datev/create", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<AccrualDatevJob>) => r.data,
+      invalidatesTags: ["Accrual"],
+    }),
+
+    getAccrualDatevJobs: builder.query<Paginated<AccrualDatevJob>, Record<string, string | number | undefined> | void>({
+      query: (params) => ({ url: "/accrual/datev/jobs", params: params || { limit: 20 } }),
+      transformResponse: (r: ApiSuccess<AccrualDatevJob[]>) => paginatedFromApi(r),
+      providesTags: ["Accrual"],
+    }),
+
+    downloadAccrualDatevExport: builder.mutation<void, { jobId: string; fileName?: string }>({
+      queryFn: async ({ jobId, fileName }) => {
+        try {
+          await downloadAuthenticatedFile(
+            `/accrual/datev/${jobId}/download`,
+            fileName ?? `Accrual_DATEV_${jobId}.csv`,
+          );
+          return { data: undefined };
+        } catch (e) {
+          return { error: { status: "CUSTOM_ERROR", error: String(e) } as never };
+        }
+      },
+    }),
+
+    getTaxCodes: builder.query<TaxCode[], void>({
+      query: () => "/accrual/tax-codes",
+      transformResponse: (r: ApiSuccess<TaxCode[]>) => r.data ?? [],
+      providesTags: [{ type: "Accrual", id: "tax-codes" }],
+    }),
+
+    upsertTaxCode: builder.mutation<TaxCode, Partial<TaxCode> & { code: string; label: string }>({
+      query: (body) => ({ url: "/accrual/tax-codes", method: "POST", body }),
+      transformResponse: (r: ApiSuccess<TaxCode>) => r.data,
+      invalidatesTags: [{ type: "Accrual", id: "tax-codes" }],
+    }),
+
     getMarketplacePayoutReconciliation: builder.query<
       Paginated<{
         payout: BusinessEvent;
@@ -823,6 +964,8 @@ export const {
   useGetImportsQuery,
   useGetImportQuery,
   useReprocessImportMutation,
+  useFailImportMutation,
+  useRetryImportMutation,
   // Transactions
   useGetTransactionsQuery,
   useGetOpenTransactionsQuery,
@@ -875,6 +1018,8 @@ export const {
   useGetStatusBreakdownQuery,
   useGetAccrualOverviewQuery,
   useGetAmazonJtlAbgleichQuery,
+  useGetAccrualMonthPackQuery,
+  useGetAccrualPeriodCoverageQuery,
   useGetAccrualDatevPreviewQuery,
   useLazyGetAccrualDatevPreviewQuery,
   // Accrual
@@ -884,6 +1029,7 @@ export const {
   useGetAccrualEventsQuery,
   useGetAccrualExceptionsQuery,
   useResolveAccrualExceptionMutation,
+  useBulkResolveAccrualExceptionsMutation,
   useGetClearingConfigQuery,
   useUpdateClearingConfigMutation,
   useGetFeeVatPreviewQuery,
@@ -891,6 +1037,17 @@ export const {
   useGetAccrualJournalQuery,
   useBuildJournalDraftMutation,
   usePostAccrualJournalMutation,
+  useBulkBuildAccrualJournalMutation,
+  useBulkPostAccrualJournalMutation,
+  useFxTrueUpEventMutation,
+  useFxTrueUpPeriodMutation,
+  usePreviewAccrualDatevExportMutation,
+  useValidateAccrualDatevExportMutation,
+  useCreateAccrualDatevExportMutation,
+  useGetAccrualDatevJobsQuery,
+  useDownloadAccrualDatevExportMutation,
+  useGetTaxCodesQuery,
+  useUpsertTaxCodeMutation,
   useGetMarketplacePayoutReconciliationQuery,
   useMatchMarketplacePayoutMutation,
 } = accountingApi;

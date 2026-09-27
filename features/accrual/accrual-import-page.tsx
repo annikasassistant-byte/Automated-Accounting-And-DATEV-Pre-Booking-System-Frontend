@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileUp, Upload, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -11,9 +12,12 @@ import {
   useImportJtlMutation,
   useImportMarketplaceMutation,
   useGetImportsQuery,
+  useFailImportMutation,
+  useRetryImportMutation,
 } from "@/services/accountingApi";
 import type { AccrualImportKind } from "@/types/accrual";
 import { formatDateTime } from "@/lib/format";
+import { useAuthStore } from "@/lib/auth-store";
 
 const META: Record<
   AccrualImportKind,
@@ -33,14 +37,35 @@ const META: Record<
   },
 };
 
+function importStatusLabel(status: string): string {
+  if (status === "completed") return "Fertig";
+  if (status === "processing") return "Verarbeitung";
+  if (status === "failed") return "Fehlgeschlagen";
+  if (status === "duplicate_file" || status === "duplicate") return "Duplikat";
+  return status;
+}
+
 export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   const meta = META[kind];
+  const isAdmin = useAuthStore((s) => s.hasRole("admin"));
   const [importJtl, { isLoading: jtlLoading }] = useImportJtlMutation();
   const [importMarketplace, { isLoading: mpLoading }] = useImportMarketplaceMutation();
+  const [failImport, { isLoading: failing }] = useFailImportMutation();
+  const [retryImport, { isLoading: retrying }] = useRetryImportMutation();
   const { data: history = [], refetch } = useGetImportsQuery(
     { source: meta?.importSource || "jtl", limit: 20 },
     { skip: !meta },
   );
+
+  const hasProcessing = history.some((b) => b.status === "processing");
+
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const id = window.setInterval(() => {
+      void refetch();
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [hasProcessing, refetch]);
 
   const [phase, setPhase] = useState<"idle" | "uploading" | "done" | "error">("idle");
   const [reportType, setReportType] = useState<"auto" | "order" | "financial">("auto");
@@ -99,6 +124,30 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
       setPhase("error");
       toast.error(
         (err as { data?: { message?: string } })?.data?.message ?? "Import fehlgeschlagen",
+      );
+    }
+  };
+
+  const onFail = async (id: string) => {
+    try {
+      await failImport({ id, reason: "Manuell abgebrochen" }).unwrap();
+      toast.success("Import als fehlgeschlagen markiert");
+      void refetch();
+    } catch (err) {
+      toast.error(
+        (err as { data?: { message?: string } })?.data?.message ?? "Abbrechen fehlgeschlagen",
+      );
+    }
+  };
+
+  const onRetry = async (id: string) => {
+    try {
+      await retryImport({ id }).unwrap();
+      toast.info("Bitte Datei erneut hochladen — der Hash wurde freigegeben.");
+      void refetch();
+    } catch (err) {
+      toast.error(
+        (err as { data?: { message?: string } })?.data?.message ?? "Wiederholen fehlgeschlagen",
       );
     }
   };
@@ -238,9 +287,42 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
             <p className="text-muted-foreground">Noch keine Importe</p>
           ) : (
             history.map((batch) => (
-              <div key={batch.id} className="flex justify-between border-b py-2 last:border-0">
-                <span>{batch.fileName}</span>
-                <span className="text-muted-foreground">{formatDateTime(batch.importedAt)}</span>
+              <div
+                key={batch.id}
+                className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-0"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium">{batch.fileName}</p>
+                  <p className="text-xs text-muted-foreground">{formatDateTime(batch.importedAt)}</p>
+                  {batch.status === "failed" && batch.errorMessage && (
+                    <p className="text-xs text-destructive">{batch.errorMessage}</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={batch.status} label={importStatusLabel(batch.status)} />
+                  {isAdmin && (batch.status === "processing" || batch.status === "failed") && (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={failing || batch.status === "failed"}
+                        onClick={() => onFail(batch.id)}
+                      >
+                        Abbrechen
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        disabled={retrying || batch.status === "processing"}
+                        onClick={() => onRetry(batch.id)}
+                      >
+                        Wiederholen
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             ))
           )}

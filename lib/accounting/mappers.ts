@@ -228,6 +228,9 @@ export function importBatchFromServer(s: ServerImportBatch): ImportBatch {
     status: s.status ?? "completed",
     errors: errs,
     balanceCheck: s.balanceCheck ?? null,
+    errorCode: s.errorCode ?? null,
+    errorMessage: s.errorMessage ?? null,
+    failedAt: s.failedAt ?? null,
   };
 }
 

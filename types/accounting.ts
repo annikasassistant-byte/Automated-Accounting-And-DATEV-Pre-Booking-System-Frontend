@@ -245,6 +245,9 @@ export interface ImportBatch {
   errors: ImportError[];
   balanceCheck?: { expectedGuthaben: number; calculatedGuthaben: number; matched: boolean; note?: string } | null;
   message?: string;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  failedAt?: string | null;
 }
 
 export interface ServerImportBatch {
@@ -270,6 +273,9 @@ export interface ServerImportBatch {
   errors?: ImportError[];
   importErrors?: ImportError[];
   balanceCheck?: { expectedGuthaben: number; calculatedGuthaben: number; matched: boolean; note?: string } | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  failedAt?: string | null;
 }
 
 export interface ImportError {

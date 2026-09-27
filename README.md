@@ -92,8 +92,8 @@ Open [http://localhost:3000](http://localhost:3000) → `/login`.
 
 - **Auth:** `/login`, `/forgot-password`, `/verify-otp`, `/reset-password`, `/unauthorized`
 - **Accounting (cash):** import bank/paypal, transactions, open items, patterns, rules, accounts, DATEV export, duplicates, reconciliation, reports, company settings
-- **Accrual:** JTL CSV/XLSX + marketplace imports (Amazon Bestellreport `.txt`/CSV + Financial), two-file JTL hint (Aufträge then Rechnungen), accounting inbox (`invoice_pending`, Prüfen = review), business events with period filter and FEE VAT invoice override, accrual journal drafts + Accrual-DATEV **preview**, expected-vs-actual payout recon, Accrual-Überblick + Amazon/JTL Gegencheck (Juli / August / Juli–2. Sep). Marktplatz-Clearing includes §13b / German input VAT treatments. JTL Shop: aliases then Amazon-ID; blank Shop ≠ Amazon; `Marktplatz` column; shop carry-forward. DATEV category Konten are admin-configurable placeholders. S15 private purchases use **3349** (no input VAT, §25a).
-- **Admin only:** `/admin/users`, `/admin/settings/clearing`, plus write actions on rules/accounts/company settings and accrual journal posting
+- **Accrual:** JTL CSV/XLSX + marketplace imports with status badges (Verarbeitung/Fertig/Fehlgeschlagen) + admin Fail/Retry + polling; accounting inbox (bulk resolve, FX_REVIEW highlight); business events with FX block + FX-Nachbuchung; journal bulk Entwürfe erzeugen/buchen + Accrual-DATEV Wizard (nicht Cash-DATEV); Periodenabdeckung + Monats-Paket on reports; Amazon-only Klassifikation; Steuerschlüssel admin list. Marktplatz-Clearing: provisionalFxEnabled + FX gain/loss accounts; §13b / German input VAT.
+- **Admin only:** `/admin/users`, `/admin/settings/clearing`, `/admin/accrual/tax-codes`, plus write actions on rules/accounts/company settings and accrual journal/DATEV/FX
 
 ## Coding structure
 
@@ -185,11 +185,11 @@ Shared Buchhaltung nav (both prefixes): Bank-Import, PayPal-Import, Transaktione
 | `features/import` | `…/import/bank`, `…/import/paypal` | CSV upload, import history, Guthaben check, reprocess |
 | `features/transactions` | `…/transactions`, `?status=open`, `?status=conflict` | List, assign, bulk status, apply-rules, detail drawer, create-rule (admin) |
 | `features/patterns` | `…/patterns` | Analyze + LexOffice DATEV suggestions (HITL; never 10001/70002) |
-| `features/accrual` | `…/import/jtl`, `…/import/marketplace/{amazon,backmarket,refurbed}`, `…/accounting-inbox`, `…/accrual/events`, `…/accrual/journal`, `…/reconciliation/marketplace`, `/admin/settings/clearing` | Amazon order vs financial; JTL CSV/XLSX + Marktplatz/Prüfen/carry-forward; Rechnung ausstehend; Accrual-DATEV Vorschau; expected payout vs actual; FEE VAT §13b RC vs DE input VAT |
+| `features/accrual` | `…/import/jtl`, `…/import/marketplace/{amazon,backmarket,refurbed}`, `…/accounting-inbox`, `…/accrual/events`, `…/accrual/journal`, `…/reconciliation/marketplace`, `/admin/settings/clearing`, `/admin/accrual/tax-codes` | Import-Status (Verarbeitung/Fertig/Fehlgeschlagen) + Fail/Retry; Bulk Journal Entwürfe/Buchen; FX-Block + FX-Nachbuchung; Accrual-DATEV Wizard (nicht Cash); Inbox Bulk + FX_REVIEW; Periodenabdeckung; Steuerschlüssel (Admin) |
 | `features/rules` | `…/rules` | CRUD, enable/disable, test, inventory seed (writes admin) |
 | `features/accounts` | `…/accounts`, `…/accounts/overview` | Chart CRUD/seed/CSV, overview + ledger (writes admin) |
 | `features/export` | `…/export` | DATEV preview → validate; create/download EXTF **admin only** (locks cash rows) |
-| `features/reports` | `…/reports` | Kontensalden + Accrual-Überblick + Amazon/JTL Gegencheck (Zeitraum-Picker) |
+| `features/reports` | `…/reports` | Kontensalden + Accrual-Überblick + Periodenabdeckung + Monats-Paket + Amazon/JTL Gegencheck (Klassifikation) |
 | `features/duplicates` | `…/duplicates` | List + resolve (merge / ignore / keep_both) |
 | `features/reconciliation` | `…/reconciliation` | Period summary + PayPal balance by import |
 | `features/settings` | `…/settings/company`, `/admin/settings/system-policies` | Company/DATEV (admin write); system policies (admin only) |
@@ -200,7 +200,7 @@ Admin-only **writes** (UI + API): rules, accounts seed/CRUD, company/DATEV/syste
 
 ### Data layer (implemented)
 
-- `accountingApi` — accounts, imports, transactions, rules, suggestions, DATEV, recon, duplicates, settings, reports, accrual (inbox, events + fee-VAT patch, journal, fee-VAT preview, payout expected, overview, Amazon/JTL Abgleich, Accrual-DATEV preview)
+- `accountingApi` — accounts, imports (+ fail/retry), transactions, rules, suggestions, DATEV, recon, duplicates, settings, reports (month-pack, period-coverage), accrual (inbox bulk-resolve, events, journal bulk build/post, FX true-up, Accrual-DATEV preview/validate/create/jobs, tax-codes, fee-VAT, payout, overview, Amazon/JTL Abgleich)
 - `authApi` — login/logout/OTP/reset, profile, admin user CRUD
 - `baseQueryWithReauth` — Bearer header, `X-Device-Id`, cookie credentials, refresh on 401
 
@@ -209,8 +209,8 @@ Admin-only **writes** (UI + API): rules, accounts seed/CRUD, company/DATEV/syste
 - Notification bell in the navbar is **UI-only** (not wired to API/socket notifications)
 - Open/conflict queues mostly use `getTransactions?status=` (dedicated RTK hooks exist but are unused on those screens)
 - Accrual: Amazon Bestellstatus is authoritative (cancel = no SALE); shipped without JTL invoice stays `invoice_pending`; financial lines = clearing; ECB FX (marketplace EUR wins; weekend/holiday = last ECB day); JTL Shop mapping includes Kaufland, Marktplatz, Prüfen, Excel dates, xlsx, shop carry-forward; expected payout vs actual; LexOffice DATEV expense suggestions
-- Accrual-DATEV is **preview only** in the journal UI (posted accrual lines; does not lock cash Transactions). Cash DATEV create remains admin-only.
-- Fee VAT: Back Market/Refurbed default **§13b reverse charge** (1577/1787); Amazon German VAT defaults to **input VAT 1576**; invoice-level exception on Geschäftsvorfälle; monthly preview on Marktplatz-Clearing. FX true-up posting still pending.
+- Accrual-DATEV Wizard sits on the journal page (posted accrual lines; create/download admin). Cash DATEV (`features/export`) remains separate and is not rewritten.
+- Fee VAT: Back Market/Refurbed default **§13b reverse charge** (1577/1787); Amazon German VAT defaults to **input VAT 1576**; invoice-level exception on Geschäftsvorfälle; monthly preview on Marktplatz-Clearing. FX true-up + provisionalFxEnabled on clearing; FX_REVIEW highlighted in inbox.
 
 <!--
 ## Keeping this README current

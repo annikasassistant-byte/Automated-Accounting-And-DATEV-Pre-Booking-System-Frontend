@@ -28,6 +28,9 @@ import {
   useGetAmazonJtlAbgleichQuery,
 } from "@/services/accountingApi";
 import { ACCRUAL_PERIODS, DEFAULT_ACCRUAL_PERIOD, type AccrualPeriodId } from "@/lib/accounting/accrual-period";
+import { PeriodCoveragePanel } from "@/features/accrual/period-coverage-panel";
+import { AccrualMonthPackPanel } from "@/features/reports/accrual-month-pack-panel";
+import { AMAZON_ONLY_CLASSIFICATION_LABELS, type AmazonOnlyClassification } from "@/types/accrual";
 
 const CHART_COLORS = [
   "var(--chart-1)",
@@ -223,6 +226,8 @@ export function ReportsPage() {
       {accrualOverview && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Accrual-Überblick ({period.label})</h2>
+          <PeriodCoveragePanel from={period.from} to={period.to} />
+          <AccrualMonthPackPanel from={period.from} to={period.to} />
           <div className="grid gap-4 md:grid-cols-3">
             <MetricCard
               title="Rechnung ausstehend"
@@ -299,6 +304,32 @@ export function ReportsPage() {
               icon={Truck}
             />
           </div>
+          {(abgleich.amazonOnly?.length ?? 0) > 0 && (
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-left">
+                  <tr>
+                    <th className="p-2">Amazon-Bestellung</th>
+                    <th className="p-2">Betrag</th>
+                    <th className="p-2">Klassifikation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {abgleich.amazonOnly!.map((row) => (
+                    <tr key={row.amazonOrderId} className="border-t">
+                      <td className="p-2 font-mono text-xs">{row.amazonOrderId}</td>
+                      <td className="p-2">{formatCurrencyPrecise(row.amazonCents / 100)}</td>
+                      <td className="p-2">
+                        {AMAZON_ONLY_CLASSIFICATION_LABELS[
+                          row.classification as AmazonOnlyClassification
+                        ] || row.classification}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
