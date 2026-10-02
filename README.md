@@ -92,7 +92,8 @@ Open [http://localhost:3000](http://localhost:3000) → `/login`.
 
 - **Auth:** `/login`, `/forgot-password`, `/verify-otp`, `/reset-password`, `/unauthorized`
 - **Accounting (cash):** import bank/paypal, transactions, open items, patterns, rules, accounts, DATEV export, duplicates, reconciliation, reports, company settings
-- **Accrual:** JTL CSV/XLSX + marketplace imports with status badges (Verarbeitung/Fertig/Fehlgeschlagen) + admin Fail/Retry + polling; accounting inbox (bulk resolve, FX_REVIEW highlight); business events with FX block + FX-Nachbuchung; journal bulk Entwürfe erzeugen/buchen + Accrual-DATEV Wizard (nicht Cash-DATEV); Periodenabdeckung + Monats-Paket on reports; Amazon-only Klassifikation; Steuerschlüssel admin list. Marktplatz-Clearing: provisionalFxEnabled + FX gain/loss accounts; §13b / German input VAT.
+- **Accrual:** JTL CSV/XLSX + marketplace imports with status badges (Verarbeitung/Fertig/Fehlgeschlagen) + admin Fail/Retry + polling; accounting inbox (bulk resolve, FX_REVIEW highlight); business events with FX block + FX-Nachbuchung; journal bulk Entwürfe erzeugen/buchen + Accrual-DATEV Wizard (JournalLine-Sperre, nicht Cash); Periodenabdeckung + Monats-Paket on reports; Amazon-only Klassifikation; Steuerschlüssel admin list. Marktplatz-Clearing: provisionalFxEnabled + FX gain/loss accounts; §13b / German input VAT.
+- **Client-gap (Juli-Feedback):** DATEV-Ausschlüsse + lokale Daten; Import-Matrix; Regel-Builder (Bedingungen/Aktionen, mapped payment, AND/OR); Events-Filter/Pagination; Inbox-Periode + konsolidierte Ausnahmen; Payout-Zeitraum/Breakdown; Duplikate-Filter; Steuerschlüssel-Admin; Muster expandierbar; Offene Posten klar als Cash-HITL.
 - **Admin only:** `/admin/users`, `/admin/settings/clearing`, `/admin/accrual/tax-codes`, plus write actions on rules/accounts/company settings and accrual journal/DATEV/FX
 
 ## Coding structure

@@ -17,7 +17,7 @@ export function TableScroll({
       {hint ? (
         <p className="mb-2 text-xs text-muted-foreground md:hidden">Wischen für weitere Spalten</p>
       ) : null}
-      <div className="overflow-auto overscroll-x-contain">{children}</div>
+      <div className="max-h-[inherit] overflow-auto overscroll-contain">{children}</div>
     </div>
   );
 }

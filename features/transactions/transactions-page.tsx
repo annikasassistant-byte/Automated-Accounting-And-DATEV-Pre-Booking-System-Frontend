@@ -280,9 +280,9 @@ export function TransactionsPage() {
         eyebrow="Buchhaltung"
         description={
           statusFilter === "conflict"
-            ? "Konfliktbehaftete Buchungen prüfen und auflösen."
+            ? "Konfliktbehaftete Buchungen prüfen und auflösen (mehrere Regeln treffen zu)."
             : statusFilter === "open"
-              ? "Offene Buchungen manuell zuordnen oder Regeln anlegen."
+              ? "Offene Posten = Cash-Transaktionen ohne klare Regelzuordnung (nicht Debitoren-/Kreditoren-OPOS). Unbezahlte Rechnungen: Accrual „Rechnung ausstehend“ / Journal."
               : "Buchbare Bewegungen prüfen, zuordnen und freigeben. PayPal-Einbehalte sind beim Import ausgeschlossen und erscheinen hier nicht."
         }
       />

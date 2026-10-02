@@ -74,18 +74,33 @@ export interface AccountingException {
   status: string;
   title: string;
   detail?: string;
+  message?: string;
+  type?: string;
   marketplace?: string | null;
   marketplaceOrderId?: string | null;
   businessEventId?: string | null;
+  sourceRecordId?: string | null;
   createdAt: string;
 }
 
 export interface AccrualInbox {
   openExceptionCount: number;
   openExceptions: AccountingException[];
+  consolidatedExceptions?: Array<{
+    title: string;
+    count: number;
+    ids: string[];
+    sample?: AccountingException;
+  }>;
   pendingEvents: BusinessEvent[];
+  pendingEventsListed?: number;
+  pendingEventsTotal?: number;
   invoicePendingCount?: number;
   recentImports: Array<{ _id: string; source: string; filename: string; createdAt: string }>;
+  periodFrom?: string | null;
+  periodTo?: string | null;
+  listNote?: string;
+  julyOpsSteps?: string[];
 }
 
 export interface PayoutOverviewRow {
@@ -98,6 +113,14 @@ export interface PayoutOverviewRow {
   refundsCents?: number;
   settlementCents?: number;
   payoutCount?: number;
+  salesCount?: number;
+  settlementCount?: number;
+  deferredReleasedCount?: number;
+  deferredRetainedCount?: number;
+  dataStatus?: string;
+  periodFrom?: string | null;
+  periodTo?: string | null;
+  components?: Record<string, number | null>;
   note?: string;
 }
 

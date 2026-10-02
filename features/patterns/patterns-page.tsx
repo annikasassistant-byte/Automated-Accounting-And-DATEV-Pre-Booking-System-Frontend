@@ -66,6 +66,7 @@ export function PatternsPage() {
       }
     | undefined
   >();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -145,8 +146,8 @@ export function PatternsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Muster & Vorschläge"
-        eyebrow="KI / Heuristik"
-        description="Wiederkehrende Keyword-Gruppen prüfen. LexOffice-DATEV erzeugt nur Vorschläge — nie 10001/70002, niedrige Konfidenz bleibt offen."
+        eyebrow="Heuristik"
+        description="Deterministische Keyword-Cluster und LexOffice-DATEV-Vorschläge — kein ChatGPT/LLM. Konfidenz ist heuristisch; 0 verknüpfte Transaktionen = Import-Vorschlag."
         action={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleAnalyze} disabled={analyzing}>
@@ -269,6 +270,12 @@ export function PatternsPage() {
                     {p.suggestedRuleName}
                   </span>
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Konfidenz = heuristische Musterstärke (kein KI-Modell).{" "}
+                  {p.transactionIds.length === 0
+                    ? "LexOffice-/Import-Vorschlag ohne verknüpfte Live-Transaktionen."
+                    : "Gestützt durch aktuelle Transaktions-Cluster."}
+                </p>
                 {(p.expenseAccountId || p.offsetAccountId) && (
                   <p className="text-xs text-muted-foreground">
                     {accountLabel(accounts, p.expenseAccountId)} →{" "}
@@ -276,7 +283,32 @@ export function PatternsPage() {
                   </p>
                 )}
               </CardHeader>
-              <CardContent className="flex-1" />
+              <CardContent className="space-y-2">
+                {p.transactionIds.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-auto px-0 text-xs"
+                    onClick={() =>
+                      setExpandedId((id) => (id === p.id ? null : p.id))
+                    }
+                  >
+                    {expandedId === p.id
+                      ? "Transaktionen ausblenden"
+                      : `${p.transactionIds.length} Transaktionen anzeigen`}
+                  </Button>
+                )}
+                {expandedId === p.id && (
+                  <ul className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border/40 p-2 font-mono text-[11px]">
+                    {p.transactionIds.map((tid) => (
+                      <li key={tid} className="truncate text-muted-foreground">
+                        {tid}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
               <CardFooter className="flex flex-wrap gap-2 border-t border-border/40 pt-4">
                 <Button
                   size="sm"

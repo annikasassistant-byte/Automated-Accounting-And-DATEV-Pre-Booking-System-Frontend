@@ -284,9 +284,36 @@ export const accountingApi = createApi({
       providesTags: ["Transactions"],
     }),
 
-    applyRules: builder.mutation<{ applied: number }, void>({
+    applyRules: builder.mutation<
+      {
+        applied: number;
+        processed?: number;
+        matched?: number;
+        conflict?: number;
+        open?: number;
+        skipped?: number;
+      },
+      void
+    >({
       query: () => ({ url: "/transactions/apply-rules", method: "POST" }),
-      transformResponse: (r: ApiSuccess) => r.data as { applied: number },
+      transformResponse: (r: ApiSuccess) => {
+        const d = r.data as {
+          processed?: number;
+          matched?: number;
+          conflict?: number;
+          open?: number;
+          skipped?: number;
+          applied?: number;
+        };
+        return {
+          applied: d?.applied ?? d?.processed ?? 0,
+          processed: d?.processed,
+          matched: d?.matched,
+          conflict: d?.conflict,
+          open: d?.open,
+          skipped: d?.skipped,
+        };
+      },
       invalidatesTags: ["Transactions", "Ledger"],
     }),
 
@@ -449,7 +476,25 @@ export const accountingApi = createApi({
 
     // ──────────── Exports ────────────
     previewExport: builder.mutation<
-      { transactionCount: number; total: number; warnings: string[]; errors: string[] },
+      {
+        transactionCount: number;
+        total: number;
+        warnings: string[];
+        errors: string[];
+        eligibility?: {
+          requiredStatus?: string[];
+          note?: string;
+        } | null;
+        exclusions?: {
+          inPeriodBookable?: number;
+          eligible?: number;
+          alreadyExported?: number;
+          notApproved?: number;
+          incompleteBooking?: number;
+          openOrConflict?: number;
+          reasons?: { reason: string; count: number }[];
+        } | null;
+      },
       { from: string; to: string; periodType?: string }
     >({
       query: (body) => ({ url: "/exports/datev/preview", method: "POST", body }),
@@ -460,6 +505,8 @@ export const accountingApi = createApi({
           total: d?.total ?? 0,
           warnings: d?.validation?.warnings ?? d?.warnings ?? [],
           errors: d?.validation?.errors ?? d?.errors ?? [],
+          eligibility: d?.eligibility ?? null,
+          exclusions: d?.exclusions ?? null,
         };
       },
     }),
@@ -718,8 +765,8 @@ export const accountingApi = createApi({
       invalidatesTags: ["Accrual", "Imports"],
     }),
 
-    getAccrualInbox: builder.query<AccrualInbox, void>({
-      query: () => "/accrual/inbox",
+    getAccrualInbox: builder.query<AccrualInbox, { from?: string; to?: string } | void>({
+      query: (params) => ({ url: "/accrual/inbox", params: params || {} }),
       transformResponse: (r: ApiSuccess<AccrualInbox>) => r.data,
       providesTags: ["Accrual"],
     }),

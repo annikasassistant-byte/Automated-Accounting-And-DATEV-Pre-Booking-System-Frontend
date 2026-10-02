@@ -77,6 +77,7 @@ export interface AccountingRule {
   caseSensitive: boolean;
   expenseAccountId: string;
   offsetAccountId: string;
+  useMappedPaymentAccount?: boolean;
   priority: number;
   enabled: boolean;
   version: number;
@@ -91,7 +92,13 @@ export interface ServerRule {
   _id: string;
   name: string;
   conditions?: RuleCondition[];
-  actions?: { konto?: string; gegenkonto?: string; buKey?: string; bookingTextTemplate?: string };
+  actions?: {
+    konto?: string;
+    gegenkonto?: string;
+    useMappedPaymentAccount?: boolean;
+    buKey?: string;
+    bookingTextTemplate?: string;
+  };
   keywords?: string[];
   matchMode?: MatchMode;
   caseSensitive?: boolean;
@@ -248,6 +255,13 @@ export interface ImportBatch {
   errorCode?: string | null;
   errorMessage?: string | null;
   failedAt?: string | null;
+  summary?: {
+    rowsRead?: number;
+    newlyCreated?: number;
+    existingSkipped?: number;
+    rejectedRows?: number;
+    note?: string | null;
+  } | null;
 }
 
 export interface ServerImportBatch {

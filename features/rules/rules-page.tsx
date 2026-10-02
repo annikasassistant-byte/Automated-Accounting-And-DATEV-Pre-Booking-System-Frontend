@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Pencil, Plus, Play, Trash2 } from "lucide-react";
+import { Pencil, Plus, Play, Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { SearchInput } from "@/components/shared/search-input";
@@ -38,6 +38,7 @@ import {
   useEnableRuleMutation,
   useDisableRuleMutation,
   useApplyRulesMutation,
+  useTestRulesMutation,
 } from "@/services/accountingApi";
 import { RuleWizardDialog } from "@/features/rules/rule-wizard-dialog";
 
@@ -55,13 +56,28 @@ export function RulesPage() {
   const [deleteRuleMut] = useDeleteRuleMutation();
   const [enableRule] = useEnableRuleMutation();
   const [disableRule] = useDisableRuleMutation();
-  const [applyRules] = useApplyRulesMutation();
+  const [applyRules, { isLoading: applying }] = useApplyRulesMutation();
+  const [testRules, { isLoading: testing }] = useTestRulesMutation();
   const isAdmin = useAuthStore((s) => s.hasRole("admin"));
 
   const [search, setSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editing, setEditing] = useState<Partial<AccountingRule> | undefined>();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    matchCount: number;
+    totalScanned: number;
+    samples: Array<{
+      _id: string;
+      bookingDate?: string;
+      amountCents?: number;
+      counterpartyName?: string;
+      purpose?: string;
+      status?: string;
+    }>;
+  } | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -81,12 +97,42 @@ export function RulesPage() {
     });
   }, [rules, accounts, search]);
 
-  const handleApply = async () => {
+  const confirmApply = async () => {
     try {
       const result = await applyRules().unwrap();
-      toast.success(`${result.applied ?? 0} Transaktion(en) mit Regeln aktualisiert`);
+      toast.success(
+        `${result.applied ?? 0} geprüft · ${result.matched ?? "?"} matched · ${result.conflict ?? "?"} Konflikt · ${result.open ?? "?"} offen · ${result.skipped ?? "?"} übersprungen`,
+      );
+      setApplyOpen(false);
     } catch {
       toast.error("Fehler beim Anwenden der Regeln");
+    }
+  };
+
+  const runDryPreview = async (ruleId?: string) => {
+    try {
+      const result = (await testRules(
+        ruleId ? { ruleId } : { conditions: [{ field: "source", operator: "any_of", value: ["bank", "paypal"] }] },
+      ).unwrap()) as {
+        matchCount?: number;
+        totalScanned?: number;
+        samples?: Array<{
+          _id: string;
+          bookingDate?: string;
+          amountCents?: number;
+          counterpartyName?: string;
+          purpose?: string;
+          status?: string;
+        }>;
+      };
+      setPreviewData({
+        matchCount: result.matchCount ?? 0,
+        totalScanned: result.totalScanned ?? 0,
+        samples: result.samples ?? [],
+      });
+      setPreviewOpen(true);
+    } catch {
+      toast.error("Vorschau fehlgeschlagen");
     }
   };
 
@@ -131,10 +177,10 @@ export function RulesPage() {
       <PageHeader
         title="Buchungsregeln"
         eyebrow="Automatisierung"
-        description="Keywords und Konten zuordnen — Regeln priorisieren und anwenden."
+        description="Bedingungen und Konten zuordnen. Priorität sortiert die Liste — bei mehreren Treffern entsteht ein Konflikt (kein automatischer Gewinner)."
         action={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleApply}>
+            <Button variant="outline" onClick={() => setApplyOpen(true)}>
               <Play className="mr-2 h-4 w-4" />
               Regel anwenden
             </Button>
@@ -147,6 +193,22 @@ export function RulesPage() {
           </div>
         }
       />
+
+      <div className="flex items-start gap-2 rounded-xl border border-border/40 bg-muted/20 p-3 text-sm text-muted-foreground">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <div className="space-y-1">
+          <p>
+            <strong className="text-foreground">Priorität:</strong> Niedriger = früher in der Liste
+            (Beispiel: 10 vor 50). Default 50. Bei mehreren passenden Regeln bleibt der Status{" "}
+            <strong className="text-foreground">Konflikt</strong> — Priorität wählt keinen Sieger.
+          </p>
+          <p>
+            Import wendet Regeln automatisch an. „Regel anwenden“ schreibt erneut auf Status offen /
+            importiert / Konflikt / matched / suggested (nicht reviewed/exported; S5-Clearing bleibt
+            geschützt). „Neu anwenden“ in der Import-Historie betrifft nur einen Batch.
+          </p>
+        </div>
+      </div>
 
       <SearchInput
         value={search}
@@ -164,9 +226,12 @@ export function RulesPage() {
         />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/60">
-          <TableScroll className="max-h-[min(640px,70vh)]">
+          <TableScroll className="max-h-[min(70vh,720px)] overflow-y-auto" hint={false}>
+            <p className="mb-2 px-3 pt-2 text-xs text-muted-foreground md:hidden">
+              Scrollen für alle Regeln und Spalten
+            </p>
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-muted/90 backdrop-blur-md">
+              <TableHeader className="sticky top-0 z-10 bg-muted/95 backdrop-blur-md">
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Aktiv</TableHead>
                   <TableHead>Name</TableHead>
@@ -174,7 +239,9 @@ export function RulesPage() {
                   <TableHead>Modus</TableHead>
                   <TableHead>Aufwand</TableHead>
                   <TableHead>Gegenkonto</TableHead>
-                  <TableHead>Priorität</TableHead>
+                  <TableHead title="Niedriger = früher sortiert; kein Auto-Gewinner">
+                    Priorität
+                  </TableHead>
                   <TableHead>Version</TableHead>
                   <TableHead>Treffer</TableHead>
                   <TableHead>Aktualisiert</TableHead>
@@ -213,7 +280,9 @@ export function RulesPage() {
                       {accountLabel(accounts, rule.expenseAccountId)}
                     </TableCell>
                     <TableCell className="max-w-[140px] truncate text-sm">
-                      {accountLabel(accounts, rule.offsetAccountId)}
+                      {rule.useMappedPaymentAccount
+                        ? "Zahlungskonto (Importquelle)"
+                        : accountLabel(accounts, rule.offsetAccountId)}
                     </TableCell>
                     <TableCell className="tabular-nums">{rule.priority}</TableCell>
                     <TableCell className="tabular-nums">v{rule.version}</TableCell>
@@ -223,6 +292,14 @@ export function RulesPage() {
                     </TableCell>
                     {isAdmin && (
                       <TableCell className="space-x-2 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={testing}
+                          onClick={() => void runDryPreview(rule.id)}
+                        >
+                          Test
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -254,6 +331,62 @@ export function RulesPage() {
         onOpenChange={setWizardOpen}
         initial={editing}
       />
+
+      <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Regeln erneut anwenden?</DialogTitle>
+            <DialogDescription>
+              Alle aktiven Regeln werden auf Transaktionen mit Status offen, importiert, Konflikt,
+              matched oder suggested angewendet (max. 5000). Nicht betroffen: reviewed, exported,
+              sowie System-Clearing Bank↔PayPal (S5). Nach dem Anlegen/Bearbeiten einer Regel dieses
+              „Regel anwenden“ nutzen — historische reviewed/exported Buchungen ändern sich nicht
+              automatisch.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApplyOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button disabled={applying} onClick={() => void confirmApply()}>
+              Jetzt anwenden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Regel-Vorschau (ohne Schreiben)</DialogTitle>
+            <DialogDescription>
+              {previewData
+                ? `${previewData.matchCount} Treffer von ${previewData.totalScanned} gescannten Transaktionen`
+                : "Keine Daten"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-72 space-y-2 overflow-y-auto text-sm">
+            {(previewData?.samples || []).map((s) => (
+              <div key={s._id} className="rounded-lg border border-border/40 p-2">
+                <p className="font-medium">{s.counterpartyName || "—"}</p>
+                <p className="text-muted-foreground">{s.purpose || "—"}</p>
+                <p className="tabular-nums text-xs">
+                  {s.bookingDate ? String(s.bookingDate).slice(0, 10) : "—"} ·{" "}
+                  {s.amountCents != null ? (s.amountCents / 100).toFixed(2) : "—"} € · {s.status}
+                </p>
+              </div>
+            ))}
+            {!previewData?.samples?.length && (
+              <p className="text-muted-foreground">Keine Beispiel-Treffer</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)}>
+              Schließen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deleteId} onOpenChange={(v) => !v && setDeleteId(null)}>
         <DialogContent>

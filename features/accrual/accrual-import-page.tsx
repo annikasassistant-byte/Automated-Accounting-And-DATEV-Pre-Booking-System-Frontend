@@ -53,7 +53,7 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
   const [failImport, { isLoading: failing }] = useFailImportMutation();
   const [retryImport, { isLoading: retrying }] = useRetryImportMutation();
   const { data: history = [], refetch } = useGetImportsQuery(
-    { source: meta?.importSource || "jtl", limit: 20 },
+    { source: meta?.importSource || "jtl", limit: 50 },
     { skip: !meta },
   );
 
@@ -279,12 +279,27 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Letzte Importe</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">Letzte Importe ({meta.importSource})</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Quelle gefiltert. Accrual-Gesamtübersicht auch im Buchhaltungs-Posteingang.
+            </p>
+          </div>
+          <Button type="button" size="sm" variant="outline" onClick={() => void refetch()}>
+            Aktualisieren
+          </Button>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {history.length === 0 ? (
-            <p className="text-muted-foreground">Noch keine Importe</p>
+            <div className="space-y-2 text-muted-foreground">
+              <p>Keine Importe mit Quelle „{meta.importSource}“ gefunden.</p>
+              <p className="text-xs">
+                Wenn der Posteingang ältere Importe zeigt, stammen sie ggf. von einer anderen
+                Marktplatz-Quelle oder einem fehlgeschlagenen Batch. Nach erfolgreichem Upload
+                erscheint der Eintrag hier.
+              </p>
+            </div>
           ) : (
             history.map((batch) => (
               <div
@@ -294,6 +309,9 @@ export function AccrualImportPage({ kind }: { kind: AccrualImportKind }) {
                 <div className="min-w-0">
                   <p className="font-medium">{batch.fileName}</p>
                   <p className="text-xs text-muted-foreground">{formatDateTime(batch.importedAt)}</p>
+                  <p className="text-xs tabular-nums text-muted-foreground">
+                    {batch.rowCount} Zeilen · {batch.successCount} neu · {batch.duplicateCount} Duplikate
+                  </p>
                   {batch.status === "failed" && batch.errorMessage && (
                     <p className="text-xs text-destructive">{batch.errorMessage}</p>
                   )}

@@ -41,6 +41,11 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
     rowCount: number;
     successCount: number;
     errorCount: number;
+    duplicateCount?: number;
+    skippedCount?: number;
+    matchedCount?: number;
+    openCount?: number;
+    conflictCount?: number;
     status?: string;
     periodStart?: string | null;
     periodEnd?: string | null;
@@ -51,6 +56,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
       note?: string;
     } | null;
     message?: string;
+    summaryNote?: string | null;
   } | null>(null);
 
   const title = source === "bank" ? "Bank-CSV Import" : "PayPal-CSV Import";
@@ -80,16 +86,26 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
         rowCount: batch.rowCount,
         successCount: batch.successCount,
         errorCount: batch.errorCount,
+        duplicateCount: batch.duplicateCount,
+        skippedCount: batch.skippedCount,
+        matchedCount: batch.matchedCount,
+        openCount: batch.openCount,
+        conflictCount: batch.conflictCount,
         status: batch.status,
         periodStart: batch.periodStart,
         periodEnd: batch.periodEnd,
         balanceCheck: batch.balanceCheck,
         message: batch.message,
+        summaryNote: batch.summary?.note ?? null,
       });
       setPhase("done");
       void refetchHistory();
       if (batch.status === "duplicate_file") {
         toast.warning(batch.message ?? "Datei wurde bereits importiert (Duplikat).");
+      } else if (batch.successCount === 0 && (batch.duplicateCount ?? 0) > 0) {
+        toast.warning(
+          `${batch.duplicateCount} Zeilen bereits vorhanden — keine neuen Transaktionen (Matched/Offen/Konflikt = 0).`,
+        );
       } else {
         toast.success(`${batch.successCount || batch.rowCount} Zeilen verarbeitet`);
       }
@@ -213,17 +229,51 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
               </p>
             </div>
             {result.status !== "duplicate_file" && (
-              <div className="flex flex-col items-center gap-1">
-                <div className="flex items-center gap-3">
+              <div className="w-full max-w-md space-y-3 text-left">
+                <div className="flex items-center justify-center gap-3">
                   <StatusBadge status={source} />
                   <span className="text-sm text-muted-foreground tabular-nums">
-                    {result.rowCount} Zeilen verarbeitet
+                    {result.rowCount} Zeilen gelesen
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <dl className="grid grid-cols-2 gap-2 rounded-xl border border-border/40 p-3 text-sm">
+                  <div>
+                    <dt className="text-muted-foreground">Neu angelegt</dt>
+                    <dd className="font-medium tabular-nums">{result.successCount}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Bereits vorhanden</dt>
+                    <dd className="font-medium tabular-nums">{result.duplicateCount ?? 0}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Abgelehnt / Fehler</dt>
+                    <dd className="font-medium tabular-nums">{result.errorCount}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Matched / Offen / Konflikt</dt>
+                    <dd className="font-medium tabular-nums">
+                      {result.matchedCount ?? 0} / {result.openCount ?? 0} /{" "}
+                      {result.conflictCount ?? 0}
+                    </dd>
+                  </div>
+                </dl>
+                {(result.successCount === 0 && (result.duplicateCount ?? 0) > 0) ||
+                result.summaryNote ? (
+                  <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">
+                    {result.summaryNote ||
+                      "Alle Zeilen waren bereits vorhanden (Fingerabdruck). Matched/Offen/Konflikt beziehen sich nur auf neu angelegte Transaktionen — deshalb 0/0/0."}
+                  </p>
+                ) : null}
+                <p className="text-center text-sm text-muted-foreground">
                   Buchungszeitraum: {formatBookingPeriod(result.periodStart, result.periodEnd)}
                 </p>
               </div>
+            )}
+            {result.status === "duplicate_file" && (
+              <p className="max-w-md text-sm text-muted-foreground">
+                Identische Datei (SHA) — keine neuen Datensätze. Die Historie zeigt den ursprünglichen
+                Import mit seinen Zählern.
+              </p>
             )}
             {result.balanceCheck && (
               <div
@@ -285,6 +335,7 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
                     <th className="px-3 py-2 font-medium">Datei</th>
                     <th className="px-3 py-2 font-medium">Status</th>
                     <th className="px-3 py-2 font-medium">Zeilen</th>
+                    <th className="px-3 py-2 font-medium">Neu / Duplikat</th>
                     <th className="px-3 py-2 font-medium">Buchungszeitraum</th>
                     <th className="px-3 py-2 font-medium">Matched / Offen / Konflikt</th>
                     <th className="px-3 py-2 font-medium">
@@ -307,12 +358,20 @@ export function CsvImportPage({ source }: { source: TransactionSource }) {
                         <StatusBadge status={batch.status} />
                       </td>
                       <td className="px-3 py-2 tabular-nums">{batch.rowCount}</td>
+                      <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                        {batch.successCount} / {batch.duplicateCount}
+                      </td>
                       <td className="px-3 py-2 tabular-nums">
                         {formatBookingPeriod(batch.periodStart, batch.periodEnd)}
                       </td>
                       <td className="px-3 py-2 tabular-nums text-muted-foreground">
                         {batch.matchedCount ?? 0} / {batch.openCount ?? 0} /{" "}
                         {batch.conflictCount ?? 0}
+                        {batch.successCount === 0 && batch.duplicateCount > 0 ? (
+                          <span className="mt-0.5 block text-[11px] text-amber-700 dark:text-amber-400">
+                            nur Duplikate übersprungen
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-3 py-2">
                         {batch.balanceCheck ? (

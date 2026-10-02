@@ -43,6 +43,7 @@ export function ruleFromServer(s: ServerRule): AccountingRule {
 
   const expenseAccountId = s.actions?.konto ?? s.konto ?? s.expenseAccountId ?? "";
   const offsetAccountId = s.actions?.gegenkonto ?? s.gegenkonto ?? s.offsetAccountId ?? "";
+  const useMappedPaymentAccount = Boolean(s.actions?.useMappedPaymentAccount);
 
   return {
     id: s._id,
@@ -52,6 +53,7 @@ export function ruleFromServer(s: ServerRule): AccountingRule {
     caseSensitive: s.caseSensitive ?? false,
     expenseAccountId,
     offsetAccountId,
+    useMappedPaymentAccount,
     priority: s.priority ?? 50,
     enabled: s.enabled ?? true,
     version: s.version ?? 1,
@@ -231,6 +233,8 @@ export function importBatchFromServer(s: ServerImportBatch): ImportBatch {
     errorCode: s.errorCode ?? null,
     errorMessage: s.errorMessage ?? null,
     failedAt: s.failedAt ?? null,
+    summary: (s as { summary?: ImportBatch["summary"] }).summary ?? null,
+    message: (s as { message?: string }).message,
   };
 }
 

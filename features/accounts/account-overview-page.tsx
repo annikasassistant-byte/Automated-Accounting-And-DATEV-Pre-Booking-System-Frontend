@@ -40,6 +40,10 @@ export function AccountOverviewPage() {
   const [includeEmpty, setIncludeEmpty] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  const [ledgerFullScreen, setLedgerFullScreen] = useState(false);
+  const [ledgerSearch, setLedgerSearch] = useState("");
+  const [ledgerStatus, setLedgerStatus] = useState("");
+  const [ledgerSource, setLedgerSource] = useState("");
 
   const period = useMemo(
     () => ({ from: from || undefined, to: to || undefined, includeEmpty }),
@@ -70,6 +74,37 @@ export function AccountOverviewPage() {
         a.accountName.toLowerCase().includes(q),
     );
   }, [accounts, query]);
+
+  const filteredLedgerLines = useMemo(() => {
+    const lines = ledger?.lines ?? [];
+    const q = ledgerSearch.trim().toLowerCase();
+    return lines.filter((line) => {
+      if (ledgerStatus && line.status !== ledgerStatus) return false;
+      if (ledgerSource && line.source !== ledgerSource) return false;
+      if (!q) return true;
+      const hay = [
+        line.purpose,
+        line.contraAccount,
+        line.source,
+        line.status,
+        String(line.amountCents),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [ledger?.lines, ledgerSearch, ledgerStatus, ledgerSource]);
+
+  const filteredLedgerTotals = useMemo(() => {
+    let debit = 0;
+    let credit = 0;
+    for (const line of filteredLedgerLines) {
+      const amt = Math.abs(line.amountCents) / 100;
+      if (line.side === "S") debit += amt;
+      else credit += amt;
+    }
+    return { count: filteredLedgerLines.length, debit, credit };
+  }, [filteredLedgerLines]);
 
   if (isLoading) return <LoadingSkeleton variant="page" />;
 
@@ -197,22 +232,44 @@ export function AccountOverviewPage() {
       <Sheet
         open={!!selectedNumber}
         onOpenChange={(open) => {
-          if (!open) setSelectedNumber(null);
+          if (!open) {
+            setSelectedNumber(null);
+            setLedgerFullScreen(false);
+            setLedgerSearch("");
+            setLedgerStatus("");
+            setLedgerSource("");
+          }
         }}
       >
         <SheetContent
           side="right"
-          className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-2xl"
+          className={
+            ledgerFullScreen
+              ? "flex w-full max-w-none flex-col gap-0 overflow-y-auto sm:max-w-none"
+              : "flex w-full flex-col gap-0 overflow-y-auto sm:max-w-4xl lg:max-w-5xl"
+          }
         >
           <SheetHeader className="border-b border-border/40">
-            <SheetTitle>Kontoauszug</SheetTitle>
-            <SheetDescription>
-              {ledger
-                ? `${ledger.accountNumber} · ${ledger.accountName}`
-                : selectedNumber
-                  ? `Konto ${selectedNumber}`
-                  : "Kein Konto ausgewählt"}
-            </SheetDescription>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <SheetTitle>Kontoauszug</SheetTitle>
+                <SheetDescription>
+                  {ledger
+                    ? `${ledger.accountNumber} · ${ledger.accountName}`
+                    : selectedNumber
+                      ? `Konto ${selectedNumber}`
+                      : "Kein Konto ausgewählt"}
+                </SheetDescription>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setLedgerFullScreen((v) => !v)}
+              >
+                {ledgerFullScreen ? "Fenster" : "Vollbild"}
+              </Button>
+            </div>
           </SheetHeader>
 
           {ledgerLoading ? (
@@ -249,14 +306,46 @@ export function AccountOverviewPage() {
                 </div>
               </dl>
 
-              {!ledger.lines.length ? (
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5 sm:col-span-1">
+                  <Label>Suche</Label>
+                  <Input
+                    value={ledgerSearch}
+                    onChange={(e) => setLedgerSearch(e.target.value)}
+                    placeholder="Text, Gegenkonto…"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Input
+                    value={ledgerStatus}
+                    onChange={(e) => setLedgerStatus(e.target.value)}
+                    placeholder="z. B. reviewed"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Quelle</Label>
+                  <Input
+                    value={ledgerSource}
+                    onChange={(e) => setLedgerSource(e.target.value)}
+                    placeholder="bank / paypal"
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Filter: {filteredLedgerTotals.count} Buchungen · Soll{" "}
+                {formatCurrencyPrecise(filteredLedgerTotals.debit)} · Haben{" "}
+                {formatCurrencyPrecise(filteredLedgerTotals.credit)}
+              </p>
+
+              {!filteredLedgerLines.length ? (
                 <EmptyState
                   title="Keine Buchungen"
-                  description="In diesem Zeitraum gibt es keine Buchungen auf diesem Konto."
+                  description="Keine Einträge für den aktuellen Filter."
                 />
               ) : (
                 <div className="overflow-hidden rounded-xl border border-border/40">
-                  <TableScroll>
+                  <TableScroll className="max-h-[min(60vh,560px)] overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -271,7 +360,7 @@ export function AccountOverviewPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {ledger.lines.map((line) => (
+                      {filteredLedgerLines.map((line) => (
                         <TableRow key={`${line.transactionId}-${line.side}`}>
                           <TableCell className="whitespace-nowrap text-sm">
                             {formatDate(line.bookingDate)}
